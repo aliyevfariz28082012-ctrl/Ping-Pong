@@ -291,7 +291,6 @@
     </div>
 
     <script>
-        // ==================== BACKEND URL ====================
         const BASE_URL = window.location.origin;
 
         // ==================== AUTH LOGIC ====================
@@ -382,6 +381,9 @@
             const SERVER_URL = `${protocol}://${window.location.host}`;
             const WIN_SCORE = 11;
             const DEUCE_GAP = 2;
+            // Virtual server dimensions
+            const VIRTUAL_W = 800;
+            const VIRTUAL_H = 500;
 
             const canvas = document.getElementById('canvas');
             const ctx = canvas.getContext('2d');
@@ -412,8 +414,7 @@
             function showIngameMenu() { ingamePanel.style.display = 'flex'; }
             function hideIngameMenu() { ingamePanel.style.display = 'none'; }
             ingameMenuBtn.addEventListener('click', () => {
-                if (ingamePanel.style.display === 'flex') hideIngameMenu();
-                else showIngameMenu();
+                ingamePanel.style.display = (ingamePanel.style.display === 'flex') ? 'none' : 'flex';
             });
             resumeBtn.addEventListener('click', hideIngameMenu);
             leaveBtn.addEventListener('click', () => {
@@ -436,6 +437,7 @@
             window.addEventListener('resize', resize);
 
             function initPositions() {
+                // Paddle dimensions relative to canvas
                 const pw = Math.max(canvas.width * 0.012, 8);
                 const ph = Math.max(canvas.height * 0.16, 55);
                 const r = Math.max(Math.min(canvas.width, canvas.height) * 0.015, 6);
@@ -446,11 +448,14 @@
             }
 
             function resetBall() {
-                ball.x = canvas.width/2; ball.y = canvas.height/2;
+                ball.x = canvas.width/2;
+                ball.y = canvas.height/2;
                 const angle = (Math.random() - 0.5) * 0.8;
                 const dir = Math.random() > 0.5 ? 1 : -1;
-                ball.vx = dir * ball.speed * Math.cos(angle);
-                ball.vy = ball.speed * Math.sin(angle);
+                const baseSpeed = canvas.width * 0.0055;
+                ball.speed = baseSpeed;
+                ball.vx = dir * baseSpeed * Math.cos(angle);
+                ball.vy = baseSpeed * Math.sin(angle);
             }
 
             function buildMenu() {
@@ -483,7 +488,6 @@
 
             function connectOnline() {
                 if (ws) ws.close();
-                // Show waiting overlay
                 waitingOverlay.style.display = 'flex';
                 waitingText.textContent = 'Connecting to server...';
                 menuOverlay.style.display = 'none';
@@ -502,10 +506,16 @@
                         startGame('online');
                     } else if (data.type === 'state') {
                         if (gameMode === 'online' && gameState === 'playing') {
-                            ball.x = data.ball.x; ball.y = data.ball.y;
-                            ball.vx = data.ball.vx; ball.vy = data.ball.vy;
-                            if (onlineSide === 'left') rightPaddle.y = data.rightY;
-                            else leftPaddle.y = data.leftY;
+                            // Convert virtual coordinates to screen coordinates
+                            ball.x = data.ball.x * (canvas.width / VIRTUAL_W);
+                            ball.y = data.ball.y * (canvas.height / VIRTUAL_H);
+                            ball.vx = data.ball.vx * (canvas.width / VIRTUAL_W);
+                            ball.vy = data.ball.vy * (canvas.height / VIRTUAL_H);
+                            if (onlineSide === 'left') {
+                                rightPaddle.y = data.rightY * (canvas.height / VIRTUAL_H);
+                            } else {
+                                leftPaddle.y = data.leftY * (canvas.height / VIRTUAL_H);
+                            }
                             scores = data.scores;
                             if (data.winner) {
                                 winner = data.winner;
@@ -569,11 +579,14 @@
                 if (gameState !== 'playing') return;
                 if (gameMode === 'online') {
                     if (ws && ws.readyState === WebSocket.OPEN) {
+                        // Send paddle position scaled to virtual height
                         const paddleY = onlineSide === 'left' ? leftPaddle.y : rightPaddle.y;
-                        ws.send(JSON.stringify({ type: 'input', y: paddleY, side: onlineSide }));
+                        const virtualY = paddleY * (VIRTUAL_H / canvas.height);
+                        ws.send(JSON.stringify({ type: 'input', y: virtualY, side: onlineSide }));
                     }
                     return;
                 }
+                // Local / bot update
                 const speed = canvas.height * 0.008;
                 if (gameMode === 'bot') {
                     if (keys['w']) leftPaddle.y -= speed;
@@ -591,18 +604,21 @@
                     rightPaddle.y += (ball.y - rightPaddle.h/2 - rightPaddle.y) * aiSpeed;
                     rightPaddle.y = Math.max(0, Math.min(canvas.height - rightPaddle.h, rightPaddle.y));
                 }
-                ball.x += ball.vx; ball.y += ball.vy;
+                ball.x += ball.vx;
+                ball.y += ball.vy;
                 if (ball.y - ball.r <= 0 || ball.y + ball.r >= canvas.height) ball.vy *= -1;
                 const hit = (p) => ball.x + ball.r > p.x && ball.x - ball.r < p.x + p.w &&
                                     ball.y + ball.r > p.y && ball.y - ball.r < p.y + p.h;
                 if (ball.vx < 0 && hit(leftPaddle)) {
                     const hitPos = (ball.y - (leftPaddle.y + leftPaddle.h/2)) / (leftPaddle.h/2);
-                    ball.vx = Math.abs(ball.vx);
+                    ball.speed += 0.3;
+                    ball.vx = Math.abs(ball.vx) + 0.3;
                     ball.vy = hitPos * ball.speed * 0.8;
                     ball.x = leftPaddle.x + leftPaddle.w + ball.r;
                 } else if (ball.vx > 0 && hit(rightPaddle)) {
                     const hitPos = (ball.y - (rightPaddle.y + rightPaddle.h/2)) / (rightPaddle.h/2);
-                    ball.vx = -Math.abs(ball.vx);
+                    ball.speed += 0.3;
+                    ball.vx = -(Math.abs(ball.vx) + 0.3);
                     ball.vy = hitPos * ball.speed * 0.8;
                     ball.x = rightPaddle.x - ball.r;
                 }
