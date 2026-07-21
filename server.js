@@ -12,8 +12,8 @@ app.use(express.json());
 app.use(express.static(path.join(__dirname)));
 
 // ============ AUTH SYSTEM ============
-const users = new Map(); // username -> { fullname, username, password, wins, losses }
-const tokens = new Map(); // token -> username
+const users = new Map();
+const tokens = new Map();
 
 app.post('/api/register', (req, res) => {
     const { fullname, username, password } = req.body;
@@ -46,8 +46,7 @@ app.get('/api/verify', (req, res) => {
         return res.json({ valid: false });
     }
     const token = auth.split(' ')[1];
-    const valid = tokens.has(token);
-    res.json({ valid });
+    res.json({ valid: tokens.has(token) });
 });
 
 // ============ GAME SYSTEM ============
@@ -195,6 +194,32 @@ wss.on('connection', (ws, req) => {
                     break;
                 }
             }
+        } else if (data.type === 'leave') {
+            // Player intentionally leaves the game
+            for (let [id, game] of games) {
+                if (game.players.includes(ws)) {
+                    clearInterval(game.interval);
+                    // Determine winner: the other player wins
+                    const leaverSide = game.players.indexOf(ws); // 0 = left, 1 = right
+                    game.winner = leaverSide === 0 ? 'right' : 'left';
+                    game.scores[game.winner] = WIN_SCORE; // force win score
+                    updateStats(game);
+                    // Notify opponent
+                    const opponent = game.players.find(p => p !== ws);
+                    if (opponent && opponent.readyState === WebSocket.OPEN) {
+                        opponent.send(JSON.stringify({
+                            type: 'state',
+                            ball: game.ball,
+                            leftY: game.leftY,
+                            rightY: game.rightY,
+                            scores: game.scores,
+                            winner: game.winner
+                        }));
+                    }
+                    games.delete(id);
+                    break;
+                }
+            }
         } else if (data.type === 'getLeaderboard') {
             broadcastLeaderboard();
         }
@@ -205,8 +230,10 @@ wss.on('connection', (ws, req) => {
         for (let [id, game] of games) {
             if (game.players.includes(ws)) {
                 clearInterval(game.interval);
-                const opp = game.players.find(p => p !== ws);
-                if (opp && opp.readyState === WebSocket.OPEN) opp.send(JSON.stringify({ type: 'opponent_left' }));
+                const opponent = game.players.find(p => p !== ws);
+                if (opponent && opponent.readyState === WebSocket.OPEN) {
+                    opponent.send(JSON.stringify({ type: 'opponent_left' }));
+                }
                 games.delete(id);
                 break;
             }
