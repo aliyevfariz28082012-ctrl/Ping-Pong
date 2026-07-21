@@ -1,6 +1,5 @@
 <!DOCTYPE html>
 <html lang="en">
-
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -9,328 +8,128 @@
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Montserrat:wght@300;400;500;600;700;800&display=swap');
 
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
-            font-family: 'Montserrat', sans-serif;
-        }
+        * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Montserrat', sans-serif; }
 
         body {
-            width: 100vw;
-            height: 100vh;
+            width: 100vw; height: 100vh;
             background: #0a0a14;
-            display: flex;
-            justify-content: center;
-            align-items: center;
+            display: flex; justify-content: center; align-items: center;
             overflow: hidden;
         }
 
         #auth-container {
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            width: 100%;
-            height: 100%;
+            display: flex; align-items: center; justify-content: center;
+            width: 100%; height: 100%;
             background: linear-gradient(to right, #0a0a14, #1a1a2e);
         }
 
         .container {
             background-color: #fff;
             border-radius: 30px;
-            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.35);
+            box-shadow: 0 5px 15px rgba(0,0,0,0.35);
             position: relative;
             overflow: hidden;
             width: 768px;
             max-width: 100%;
             min-height: 480px;
         }
-
-        .container p {
-            font-size: 14px;
-            line-height: 20px;
-            letter-spacing: 0.3px;
-            margin: 20px 0;
-        }
-
-        .container span {
-            font-size: 12px;
-        }
-
-        .container a {
-            color: #333;
-            font-size: 13px;
-            text-decoration: none;
-            margin: 15px 0 10px;
-        }
-
+        .container p { font-size: 14px; line-height: 20px; letter-spacing: 0.3px; margin: 20px 0; }
+        .container span { font-size: 12px; }
+        .container a { color: #333; font-size: 13px; text-decoration: none; margin: 15px 0 10px; }
         .container button {
-            background-color: #512da8;
-            color: #fff;
-            font-size: 12px;
-            padding: 10px 45px;
-            border: 1px solid transparent;
-            border-radius: 8px;
-            font-weight: 600;
-            letter-spacing: 0.5px;
-            text-transform: uppercase;
-            margin-top: 10px;
-            cursor: pointer;
+            background-color: #512da8; color: #fff; font-size: 12px; padding: 10px 45px;
+            border: 1px solid transparent; border-radius: 8px; font-weight: 600;
+            letter-spacing: 0.5px; text-transform: uppercase; margin-top: 10px; cursor: pointer;
             transition: all 0.3s ease;
         }
-
-        .container button.hidden {
-            background-color: transparent;
-            border-color: #fff;
-        }
-
+        .container button.hidden { background-color: transparent; border-color: #fff; }
         .container form {
-            background-color: #fff;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            flex-direction: column;
-            padding: 0 40px;
-            height: 100%;
+            background-color: #fff; display: flex; align-items: center;
+            justify-content: center; flex-direction: column; padding: 0 40px; height: 100%;
         }
-
         .container input {
-            background-color: #eee;
-            border: none;
-            margin: 8px 0;
-            padding: 10px 15px;
-            font-size: 13px;
-            border-radius: 8px;
-            width: 100%;
-            outline: none;
+            background-color: #eee; border: none; margin: 8px 0; padding: 10px 15px;
+            font-size: 13px; border-radius: 8px; width: 100%; outline: none;
         }
-
         .form-container {
-            position: absolute;
-            top: 0;
-            height: 100%;
-            transition: all 0.6s ease-in-out;
+            position: absolute; top: 0; height: 100%; transition: all 0.6s ease-in-out;
         }
-
-        .sign-in {
-            left: 0;
-            width: 50%;
-            z-index: 2;
-        }
-
-        .container.active .sign-in {
-            transform: translateX(100%);
-        }
-
-        .sign-up {
-            left: 0;
-            width: 50%;
-            opacity: 0;
-            z-index: 1;
-        }
-
-        .container.active .sign-up {
-            transform: translateX(100%);
-            opacity: 1;
-            z-index: 5;
-            animation: move 0.6s;
-        }
-
+        .sign-in { left: 0; width: 50%; z-index: 2; }
+        .container.active .sign-in { transform: translateX(100%); }
+        .sign-up { left: 0; width: 50%; opacity: 0; z-index: 1; }
+        .container.active .sign-up { transform: translateX(100%); opacity: 1; z-index: 5; animation: move 0.6s; }
         @keyframes move {
-
-            0%,
-            49.99% {
-                opacity: 0;
-                z-index: 1;
-            }
-
-            50%,
-            100% {
-                opacity: 1;
-                z-index: 5;
-            }
+            0%, 49.99% { opacity: 0; z-index: 1; }
+            50%, 100% { opacity: 1; z-index: 5; }
         }
-
         .toggle-container {
-            position: absolute;
-            top: 0;
-            left: 50%;
-            width: 50%;
-            height: 100%;
-            overflow: hidden;
-            transition: all 0.6s ease-in-out;
-            border-radius: 150px 0 0 100px;
-            z-index: 1000;
+            position: absolute; top: 0; left: 50%; width: 50%; height: 100%;
+            overflow: hidden; transition: all 0.6s ease-in-out;
+            border-radius: 150px 0 0 100px; z-index: 1000;
         }
-
-        .container.active .toggle-container {
-            transform: translateX(-100%);
-            border-radius: 0 150px 100px 0;
-        }
-
+        .container.active .toggle-container { transform: translateX(-100%); border-radius: 0 150px 100px 0; }
         .toggle {
-            background-color: #512da8;
-            height: 100%;
+            background-color: #512da8; height: 100%;
             background: linear-gradient(to right, #5c6bc0, #512da8);
-            color: #fff;
-            position: relative;
-            left: -100%;
-            height: 100%;
-            width: 200%;
-            transform: translateX(0);
-            transition: all 0.6s ease-in-out;
+            color: #fff; position: relative; left: -100%; height: 100%; width: 200%;
+            transform: translateX(0); transition: all 0.6s ease-in-out;
         }
-
-        .container.active .toggle {
-            transform: translateX(50%);
-        }
-
+        .container.active .toggle { transform: translateX(50%); }
         .toggle-panel {
-            position: absolute;
-            width: 50%;
-            height: 100%;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            flex-direction: column;
-            padding: 0 30px;
-            text-align: center;
-            top: 0;
-            transform: translateX(0);
-            transition: all 0.6s ease-in-out;
+            position: absolute; width: 50%; height: 100%; display: flex;
+            align-items: center; justify-content: center; flex-direction: column;
+            padding: 0 30px; text-align: center; top: 0;
+            transform: translateX(0); transition: all 0.6s ease-in-out;
         }
-
-        .toggle-left {
-            transform: translateX(-200%);
-        }
-
-        .container.active .toggle-left {
-            transform: translateX(0);
-        }
-
-        .toggle-right {
-            right: 0;
-            transform: translateX(0);
-        }
-
-        .container.active .toggle-right {
-            transform: translateX(200%);
-        }
-
-        .error-auth {
-            color: #e53935;
-            font-size: 12px;
-            margin-top: 5px;
-            min-height: 18px;
-        }
-
+        .toggle-left { transform: translateX(-200%); }
+        .container.active .toggle-left { transform: translateX(0); }
+        .toggle-right { right: 0; transform: translateX(0); }
+        .container.active .toggle-right { transform: translateX(200%); }
+        .error-auth { color: #e53935; font-size: 12px; margin-top: 5px; min-height: 18px; }
         .form-footer {
             margin-top: 15px;
             font-size: 13px;
             color: #666;
         }
-
         .form-footer a {
             color: #512da8;
             font-weight: 600;
             cursor: pointer;
             text-decoration: none;
         }
-
-        .form-footer a:hover {
-            text-decoration: underline;
-        }
+        .form-footer a:hover { text-decoration: underline; }
 
         #game-container {
-            display: none;
-            width: 100%;
-            height: 100%;
+            display: none; width: 100%; height: 100%;
             position: relative;
         }
-
-        canvas {
-            display: block;
-            position: absolute;
-            top: 0;
-            left: 0;
-        }
-
+        canvas { display: block; position: absolute; top: 0; left: 0; }
         #menu-overlay {
-            position: absolute;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            display: flex;
-            flex-direction: column;
-            justify-content: center;
-            align-items: center;
-            pointer-events: none;
-            z-index: 10;
+            position: absolute; top: 0; left: 0; width: 100%; height: 100%;
+            display: flex; flex-direction: column; justify-content: center; align-items: center;
+            pointer-events: none; z-index: 10;
         }
-
         .menu-btn {
-            pointer-events: auto;
-            background: rgba(20, 20, 35, 0.9);
-            color: white;
-            border: 2px solid #00e5ff;
-            padding: 12px 32px;
-            margin: 8px;
-            font-size: 22px;
-            font-weight: bold;
-            border-radius: 40px;
-            cursor: pointer;
-            transition: 0.2s;
-            backdrop-filter: blur(10px);
-            min-width: 220px;
-            text-align: center;
+            pointer-events: auto; background: rgba(20,20,35,0.9);
+            color: white; border: 2px solid #00e5ff;
+            padding: 12px 32px; margin: 8px; font-size: 22px;
+            font-weight: bold; border-radius: 40px; cursor: pointer; transition: 0.2s;
+            backdrop-filter: blur(10px); min-width: 220px; text-align: center;
         }
-
-        .menu-btn:hover {
-            background: #00e5ff;
-            color: #000;
-            border-color: #fff;
-            box-shadow: 0 0 20px #00e5ff;
-        }
-
-        .menu-btn.selected {
-            background: #ff9800;
-            border-color: #ff9800;
-            color: #000;
-        }
-
+        .menu-btn:hover { background: #00e5ff; color: #000; border-color: #fff; box-shadow: 0 0 20px #00e5ff; }
+        .menu-btn.selected { background: #ff9800; border-color: #ff9800; color: #000; }
         #leaderboard {
-            position: absolute;
-            right: 20px;
-            top: 20px;
-            background: rgba(0, 0, 0, 0.7);
-            color: white;
-            padding: 15px;
-            border-radius: 12px;
-            font-size: 14px;
-            max-height: 300px;
-            overflow-y: auto;
-            backdrop-filter: blur(8px);
-            border: 1px solid rgba(255, 255, 255, 0.2);
+            position: absolute; right: 20px; top: 20px;
+            background: rgba(0,0,0,0.7); color: white; padding: 15px;
+            border-radius: 12px; font-size: 14px; max-height: 300px; overflow-y: auto;
+            backdrop-filter: blur(8px); border: 1px solid rgba(255,255,255,0.2);
         }
-
         #logout-btn {
-            position: absolute;
-            left: 20px;
-            top: 20px;
-            z-index: 20;
-            background: rgba(255, 255, 255, 0.1);
-            color: white;
-            border: 1px solid rgba(255, 255, 255, 0.3);
-            padding: 8px 16px;
-            border-radius: 20px;
-            cursor: pointer;
-            font-size: 14px;
+            position: absolute; left: 20px; top: 20px; z-index: 20;
+            background: rgba(255,255,255,0.1); color: white; border: 1px solid rgba(255,255,255,0.3);
+            padding: 8px 16px; border-radius: 20px; cursor: pointer; font-size: 14px;
         }
-
-        #logout-btn:hover {
-            background: rgba(255, 82, 82, 0.3);
-        }
+        #logout-btn:hover { background: rgba(255,82,82,0.3); }
 
         /* In-game menu */
         #ingame-menu-btn {
@@ -339,9 +138,9 @@
             left: 50%;
             transform: translateX(-50%);
             z-index: 25;
-            background: rgba(0, 0, 0, 0.6);
+            background: rgba(0,0,0,0.6);
             color: white;
-            border: 1px solid rgba(255, 255, 255, 0.4);
+            border: 1px solid rgba(255,255,255,0.4);
             border-radius: 50%;
             width: 40px;
             height: 40px;
@@ -352,18 +151,14 @@
             cursor: pointer;
             backdrop-filter: blur(10px);
         }
-
-        #ingame-menu-btn:hover {
-            background: rgba(255, 255, 255, 0.2);
-        }
-
+        #ingame-menu-btn:hover { background: rgba(255,255,255,0.2); }
         #ingame-panel {
             position: absolute;
             top: 60px;
             left: 50%;
             transform: translateX(-50%);
             z-index: 26;
-            background: rgba(20, 20, 35, 0.95);
+            background: rgba(20,20,35,0.95);
             border: 1px solid #00e5ff;
             border-radius: 16px;
             padding: 12px 24px;
@@ -374,7 +169,6 @@
             min-width: 160px;
             text-align: center;
         }
-
         .ingame-option {
             background: transparent;
             color: white;
@@ -386,27 +180,54 @@
             cursor: pointer;
             transition: 0.2s;
         }
+        .ingame-option:hover { background: rgba(255,255,255,0.1); }
+        #leave-game-btn { color: #ff5252; }
+        #leave-game-btn:hover { background: rgba(255,82,82,0.3); }
 
-        .ingame-option:hover {
-            background: rgba(255, 255, 255, 0.1);
+        /* Waiting overlay */
+        #waiting-overlay {
+            position: absolute;
+            top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(0,0,0,0.75);
+            display: none;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            z-index: 50;
+            color: white;
+            font-size: 24px;
+            backdrop-filter: blur(10px);
         }
-
-        #leave-game-btn {
-            color: #ff5252;
+        .loader {
+            border: 5px solid rgba(255,255,255,0.2);
+            border-radius: 50%;
+            border-top: 5px solid #00e5ff;
+            width: 50px;
+            height: 50px;
+            animation: spin 1s linear infinite;
+            margin-bottom: 20px;
         }
-
-        #leave-game-btn:hover {
-            background: rgba(255, 82, 82, 0.3);
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+        #waiting-cancel {
+            margin-top: 20px;
+            background: rgba(255,255,255,0.15);
+            border: 1px solid white;
+            color: white;
+            padding: 8px 20px;
+            border-radius: 20px;
+            cursor: pointer;
+            font-size: 16px;
         }
     </style>
 </head>
-
 <body>
 
     <!-- AUTH SECTION -->
     <div id="auth-container">
         <div class="container" id="container">
-            <!-- Sign Up Form -->
             <div class="form-container sign-up">
                 <form id="signup-form">
                     <h1>Create Account</h1>
@@ -421,8 +242,6 @@
                     </div>
                 </form>
             </div>
-
-            <!-- Sign In Form -->
             <div class="form-container sign-in">
                 <form id="signin-form">
                     <h1>Sign In</h1>
@@ -436,8 +255,6 @@
                     </div>
                 </form>
             </div>
-
-            <!-- Toggle Overlay -->
             <div class="toggle-container">
                 <div class="toggle">
                     <div class="toggle-panel toggle-left">
@@ -466,6 +283,11 @@
         </div>
         <div id="menu-overlay"></div>
         <div id="leaderboard"></div>
+        <div id="waiting-overlay">
+            <div class="loader"></div>
+            <div id="waiting-text">Connecting to server...</div>
+            <button id="waiting-cancel">Cancel</button>
+        </div>
     </div>
 
     <script>
@@ -481,15 +303,11 @@
 
         registerBtn.addEventListener('click', () => container.classList.add("active"));
         loginBtn.addEventListener('click', () => container.classList.remove("active"));
-
-        // Footer links
         document.getElementById('show-register').addEventListener('click', () => container.classList.add("active"));
         document.getElementById('show-login').addEventListener('click', () => container.classList.remove("active"));
 
         const token = localStorage.getItem('pongToken');
-        if (token) {
-            verifyToken(token);
-        }
+        if (token) verifyToken(token);
 
         document.getElementById('signup-form').addEventListener('submit', async (e) => {
             e.preventDefault();
@@ -498,30 +316,21 @@
             const password = document.getElementById('signup-password').value;
             const errEl = document.getElementById('signup-error');
             errEl.textContent = '';
-
-            if (!fullname || !username || !password) {
-                errEl.textContent = 'All fields are required';
-                return;
-            }
-
+            if (!fullname || !username || !password) { errEl.textContent = 'All fields are required'; return; }
             try {
                 const res = await fetch(`${BASE_URL}/api/register`, {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
+                    method: 'POST', headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({ fullname, username, password })
                 });
                 const data = await res.json();
-                if (data.error) {
-                    errEl.textContent = data.error;
-                } else {
+                if (data.error) errEl.textContent = data.error;
+                else {
                     localStorage.setItem('pongToken', data.token);
                     localStorage.setItem('pongUsername', data.username);
                     localStorage.setItem('pongFullname', data.fullname);
                     showGame();
                 }
-            } catch (err) {
-                errEl.textContent = 'Connection error. Try again.';
-            }
+            } catch (err) { errEl.textContent = 'Connection error. Try again.'; }
         });
 
         document.getElementById('signin-form').addEventListener('submit', async (e) => {
@@ -530,44 +339,30 @@
             const password = document.getElementById('signin-password').value;
             const errEl = document.getElementById('signin-error');
             errEl.textContent = '';
-
-            if (!username || !password) {
-                errEl.textContent = 'All fields are required';
-                return;
-            }
-
+            if (!username || !password) { errEl.textContent = 'All fields are required'; return; }
             try {
                 const res = await fetch(`${BASE_URL}/api/login`, {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
+                    method: 'POST', headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({ username, password })
                 });
                 const data = await res.json();
-                if (data.error) {
-                    errEl.textContent = data.error;
-                } else {
+                if (data.error) errEl.textContent = data.error;
+                else {
                     localStorage.setItem('pongToken', data.token);
                     localStorage.setItem('pongUsername', data.username);
                     localStorage.setItem('pongFullname', data.fullname);
                     showGame();
                 }
-            } catch (err) {
-                errEl.textContent = 'Connection error. Try again.';
-            }
+            } catch (err) { errEl.textContent = 'Connection error. Try again.'; }
         });
 
         async function verifyToken(token) {
             try {
-                const res = await fetch(`${BASE_URL}/api/verify`, {
-                    headers: { 'Authorization': `Bearer ${token}` }
-                });
+                const res = await fetch(`${BASE_URL}/api/verify`, { headers: { 'Authorization': `Bearer ${token}` } });
                 const data = await res.json();
-                if (data.valid) {
-                    showGame();
-                } else {
-                    localStorage.removeItem('pongToken');
-                }
-            } catch (e) { }
+                if (data.valid) showGame();
+                else localStorage.removeItem('pongToken');
+            } catch (e) {}
         }
 
         function showGame() {
@@ -596,9 +391,11 @@
             const ingamePanel = document.getElementById('ingame-panel');
             const resumeBtn = document.getElementById('resume-btn');
             const leaveBtn = document.getElementById('leave-game-btn');
+            const waitingOverlay = document.getElementById('waiting-overlay');
+            const waitingText = document.getElementById('waiting-text');
+            const waitingCancel = document.getElementById('waiting-cancel');
 
             const token = localStorage.getItem('pongToken');
-            const myUsername = localStorage.getItem('pongUsername') || 'Player';
 
             let gameState = 'menu';
             let gameMode = null;
@@ -606,19 +403,14 @@
             let ws = null;
             let onlineOpponent = null;
             let onlineSide = null;
-
             let leftPaddle, rightPaddle, ball;
             let scores = { left: 0, right: 0 };
             let winner = null;
             const keys = {};
 
-            // In-game menu controls
-            function showIngameMenu() {
-                ingamePanel.style.display = 'flex';
-            }
-            function hideIngameMenu() {
-                ingamePanel.style.display = 'none';
-            }
+            // In-game menu
+            function showIngameMenu() { ingamePanel.style.display = 'flex'; }
+            function hideIngameMenu() { ingamePanel.style.display = 'none'; }
             ingameMenuBtn.addEventListener('click', () => {
                 if (ingamePanel.style.display === 'flex') hideIngameMenu();
                 else showIngameMenu();
@@ -626,22 +418,15 @@
             resumeBtn.addEventListener('click', hideIngameMenu);
             leaveBtn.addEventListener('click', () => {
                 hideIngameMenu();
-                leaveGame();
-            });
-
-            function leaveGame() {
                 if (gameMode === 'online' && ws && ws.readyState === WebSocket.OPEN) {
                     ws.send(JSON.stringify({ type: 'leave' }));
                 }
-                // Go back to menu
                 gameState = 'menu';
                 menuOverlay.style.display = 'flex';
                 buildMenu();
                 ingameMenuBtn.style.display = 'none';
-                hideIngameMenu();
-                scores = { left: 0, right: 0 };
-                winner = null;
-            }
+                scores = { left: 0, right: 0 }; winner = null;
+            });
 
             function resize() {
                 canvas.width = window.innerWidth;
@@ -654,15 +439,14 @@
                 const pw = Math.max(canvas.width * 0.012, 8);
                 const ph = Math.max(canvas.height * 0.16, 55);
                 const r = Math.max(Math.min(canvas.width, canvas.height) * 0.015, 6);
-                leftPaddle = { x: canvas.width * 0.03, y: canvas.height / 2 - ph / 2, w: pw, h: ph, color: '#00e5ff' };
-                rightPaddle = { x: canvas.width - canvas.width * 0.03 - pw, y: canvas.height / 2 - ph / 2, w: pw, h: ph, color: '#ff5252' };
-                ball = { x: canvas.width / 2, y: canvas.height / 2, r, vx: 0, vy: 0, speed: canvas.width * 0.0055 };
+                leftPaddle = { x: canvas.width*0.03, y: canvas.height/2 - ph/2, w: pw, h: ph, color: '#00e5ff' };
+                rightPaddle = { x: canvas.width - canvas.width*0.03 - pw, y: canvas.height/2 - ph/2, w: pw, h: ph, color: '#ff5252' };
+                ball = { x: canvas.width/2, y: canvas.height/2, r, vx: 0, vy: 0, speed: canvas.width*0.0055 };
                 resetBall();
             }
 
             function resetBall() {
-                ball.x = canvas.width / 2;
-                ball.y = canvas.height / 2;
+                ball.x = canvas.width/2; ball.y = canvas.height/2;
                 const angle = (Math.random() - 0.5) * 0.8;
                 const dir = Math.random() > 0.5 ? 1 : -1;
                 ball.vx = dir * ball.speed * Math.cos(angle);
@@ -671,27 +455,27 @@
 
             function buildMenu() {
                 menuOverlay.innerHTML = '';
-                [{ text: '1 Player (vs Bot)', action: () => startGame('bot') },
-                { text: '2 Players (Local)', action: () => startGame('local') },
-                { text: 'Online Multiplayer', action: () => connectOnline() }]
-                    .forEach(b => {
-                        const btn = document.createElement('div');
-                        btn.className = 'menu-btn';
-                        btn.textContent = b.text;
-                        btn.onclick = b.action;
-                        menuOverlay.appendChild(btn);
-                    });
+                [{ text: '1 Player (vs Bot)', action: ()=> startGame('bot') },
+                 { text: '2 Players (Local)', action: ()=> startGame('local') },
+                 { text: 'Online Multiplayer', action: ()=> connectOnline() }]
+                .forEach(b => {
+                    const btn = document.createElement('div');
+                    btn.className = 'menu-btn';
+                    btn.textContent = b.text;
+                    btn.onclick = b.action;
+                    menuOverlay.appendChild(btn);
+                });
                 const diffLabel = document.createElement('div');
                 diffLabel.style.color = '#aaa'; diffLabel.style.marginTop = '15px';
                 diffLabel.textContent = 'Difficulty (for Bot):';
                 menuOverlay.appendChild(diffLabel);
                 const diffRow = document.createElement('div');
                 diffRow.style.display = 'flex'; diffRow.style.gap = '10px'; diffRow.style.marginTop = '8px';
-                ['easy', 'medium', 'hard'].forEach(d => {
+                ['easy','medium','hard'].forEach(d => {
                     const dbtn = document.createElement('div');
-                    dbtn.className = 'menu-btn' + (difficulty === d ? ' selected' : '');
+                    dbtn.className = 'menu-btn' + (difficulty===d?' selected':'');
                     dbtn.textContent = d.toUpperCase();
-                    dbtn.onclick = () => { difficulty = d; buildMenu(); };
+                    dbtn.onclick = ()=>{ difficulty = d; buildMenu(); };
                     diffRow.appendChild(dbtn);
                 });
                 menuOverlay.appendChild(diffRow);
@@ -699,16 +483,23 @@
 
             function connectOnline() {
                 if (ws) ws.close();
+                // Show waiting overlay
+                waitingOverlay.style.display = 'flex';
+                waitingText.textContent = 'Connecting to server...';
+                menuOverlay.style.display = 'none';
+
                 ws = new WebSocket(`${SERVER_URL}?token=${token}`);
                 ws.onopen = () => {
+                    waitingText.textContent = 'Waiting for opponent...';
                     ws.send(JSON.stringify({ type: 'join' }));
-                    startGame('online');
                 };
                 ws.onmessage = (msg) => {
                     const data = JSON.parse(msg.data);
                     if (data.type === 'opponent') {
                         onlineOpponent = data.opponent;
                         onlineSide = data.side;
+                        waitingOverlay.style.display = 'none';
+                        startGame('online');
                     } else if (data.type === 'state') {
                         if (gameMode === 'online' && gameState === 'playing') {
                             ball.x = data.ball.x; ball.y = data.ball.y;
@@ -728,7 +519,9 @@
                         renderLeaderboard(data.leaders);
                     }
                 };
-                ws.onerror = () => { };
+                ws.onerror = () => {
+                    waitingText.textContent = 'Connection failed. Please try again.';
+                };
                 ws.onclose = () => {
                     if (gameMode === 'online' && gameState === 'playing') {
                         gameState = 'menu';
@@ -737,12 +530,21 @@
                         ingameMenuBtn.style.display = 'none';
                         hideIngameMenu();
                     }
+                    waitingOverlay.style.display = 'none';
                 };
             }
 
+            waitingCancel.addEventListener('click', () => {
+                if (ws) ws.close();
+                waitingOverlay.style.display = 'none';
+                gameState = 'menu';
+                menuOverlay.style.display = 'flex';
+                buildMenu();
+            });
+
             function startGame(mode) {
                 gameMode = mode;
-                scores = { left: 0, right: 0 };
+                scores = { left:0, right:0 };
                 winner = null;
                 gameState = 'playing';
                 menuOverlay.style.display = 'none';
@@ -752,19 +554,14 @@
             }
 
             function updateLeaderboard() {
-                if (ws && ws.readyState === WebSocket.OPEN) {
-                    ws.send(JSON.stringify({ type: 'getLeaderboard' }));
-                }
+                if (ws && ws.readyState === WebSocket.OPEN) ws.send(JSON.stringify({ type: 'getLeaderboard' }));
             }
 
             function renderLeaderboard(leaders) {
                 leaderboardDiv.innerHTML = '<b>🏆 Global Ranking</b><br>';
-                if (!leaders || leaders.length === 0) {
-                    leaderboardDiv.innerHTML += 'No data yet.';
-                    return;
-                }
-                leaders.forEach((p, i) => {
-                    leaderboardDiv.innerHTML += `${i + 1}. ${p.fullname || p.name} - Wins: ${p.wins} Losses: ${p.losses}<br>`;
+                if (!leaders || leaders.length===0) { leaderboardDiv.innerHTML += 'No data yet.'; return; }
+                leaders.forEach((p,i) => {
+                    leaderboardDiv.innerHTML += `${i+1}. ${p.fullname || p.name} - Wins: ${p.wins} Losses: ${p.losses}<br>`;
                 });
             }
 
@@ -791,20 +588,20 @@
                 rightPaddle.y = Math.max(0, Math.min(canvas.height - rightPaddle.h, rightPaddle.y));
                 if (gameMode === 'bot') {
                     const aiSpeed = { easy: 0.04, medium: 0.07, hard: 0.11 }[difficulty];
-                    rightPaddle.y += (ball.y - rightPaddle.h / 2 - rightPaddle.y) * aiSpeed;
+                    rightPaddle.y += (ball.y - rightPaddle.h/2 - rightPaddle.y) * aiSpeed;
                     rightPaddle.y = Math.max(0, Math.min(canvas.height - rightPaddle.h, rightPaddle.y));
                 }
                 ball.x += ball.vx; ball.y += ball.vy;
                 if (ball.y - ball.r <= 0 || ball.y + ball.r >= canvas.height) ball.vy *= -1;
                 const hit = (p) => ball.x + ball.r > p.x && ball.x - ball.r < p.x + p.w &&
-                    ball.y + ball.r > p.y && ball.y - ball.r < p.y + p.h;
+                                    ball.y + ball.r > p.y && ball.y - ball.r < p.y + p.h;
                 if (ball.vx < 0 && hit(leftPaddle)) {
-                    const hitPos = (ball.y - (leftPaddle.y + leftPaddle.h / 2)) / (leftPaddle.h / 2);
+                    const hitPos = (ball.y - (leftPaddle.y + leftPaddle.h/2)) / (leftPaddle.h/2);
                     ball.vx = Math.abs(ball.vx);
                     ball.vy = hitPos * ball.speed * 0.8;
                     ball.x = leftPaddle.x + leftPaddle.w + ball.r;
                 } else if (ball.vx > 0 && hit(rightPaddle)) {
-                    const hitPos = (ball.y - (rightPaddle.y + rightPaddle.h / 2)) / (rightPaddle.h / 2);
+                    const hitPos = (ball.y - (rightPaddle.y + rightPaddle.h/2)) / (rightPaddle.h/2);
                     ball.vx = -Math.abs(ball.vx);
                     ball.vy = hitPos * ball.speed * 0.8;
                     ball.x = rightPaddle.x - ball.r;
@@ -815,25 +612,21 @@
 
             function checkWin() {
                 if (scores.left >= WIN_SCORE && scores.left - scores.right >= DEUCE_GAP) {
-                    winner = 'Left Player';
-                    gameState = 'gameover';
-                    ingameMenuBtn.style.display = 'none';
-                    hideIngameMenu();
+                    winner = 'Left Player'; gameState = 'gameover';
+                    ingameMenuBtn.style.display = 'none'; hideIngameMenu();
                 } else if (scores.right >= WIN_SCORE && scores.right - scores.left >= DEUCE_GAP) {
-                    winner = 'Right Player';
-                    gameState = 'gameover';
-                    ingameMenuBtn.style.display = 'none';
-                    hideIngameMenu();
+                    winner = 'Right Player'; gameState = 'gameover';
+                    ingameMenuBtn.style.display = 'none'; hideIngameMenu();
                 }
             }
 
             function draw() {
-                ctx.clearRect(0, 0, canvas.width, canvas.height);
+                ctx.clearRect(0,0,canvas.width,canvas.height);
                 ctx.strokeStyle = 'rgba(255,255,255,0.2)';
                 ctx.setLineDash([8, 12]);
                 ctx.beginPath();
-                ctx.moveTo(canvas.width / 2, 0);
-                ctx.lineTo(canvas.width / 2, canvas.height);
+                ctx.moveTo(canvas.width/2, 0);
+                ctx.lineTo(canvas.width/2, canvas.height);
                 ctx.stroke();
                 ctx.setLineDash([]);
                 [leftPaddle, rightPaddle].forEach(p => {
@@ -843,22 +636,22 @@
                     ctx.shadowBlur = 0;
                 });
                 ctx.fillStyle = '#fff'; ctx.shadowColor = '#fff'; ctx.shadowBlur = 15;
-                ctx.beginPath(); ctx.arc(ball.x, ball.y, ball.r, 0, Math.PI * 2); ctx.fill();
+                ctx.beginPath(); ctx.arc(ball.x, ball.y, ball.r, 0, Math.PI*2); ctx.fill();
                 ctx.shadowBlur = 0;
-                ctx.font = `bold ${canvas.width * 0.06}px 'Montserrat', sans-serif`;
+                ctx.font = `bold ${canvas.width*0.06}px 'Montserrat', sans-serif`;
                 ctx.textAlign = 'center';
                 ctx.fillStyle = leftPaddle.color;
-                ctx.fillText(scores.left, canvas.width / 4, canvas.height * 0.1);
+                ctx.fillText(scores.left, canvas.width/4, canvas.height*0.1);
                 ctx.fillStyle = rightPaddle.color;
-                ctx.fillText(scores.right, 3 * canvas.width / 4, canvas.height * 0.1);
+                ctx.fillText(scores.right, 3*canvas.width/4, canvas.height*0.1);
                 if (gameState === 'gameover') {
                     ctx.fillStyle = 'rgba(0,0,0,0.7)';
-                    ctx.fillRect(0, 0, canvas.width, canvas.height);
+                    ctx.fillRect(0,0,canvas.width,canvas.height);
                     ctx.fillStyle = '#fff';
-                    ctx.font = `${canvas.width * 0.06}px 'Montserrat', sans-serif`;
-                    ctx.fillText(`${winner} Wins!`, canvas.width / 2, canvas.height / 2 - 30);
-                    ctx.font = `${canvas.width * 0.03}px 'Montserrat', sans-serif`;
-                    ctx.fillText('Press SPACE to return to menu', canvas.width / 2, canvas.height / 2 + 30);
+                    ctx.font = `${canvas.width*0.06}px 'Montserrat', sans-serif`;
+                    ctx.fillText(`${winner} Wins!`, canvas.width/2, canvas.height/2-30);
+                    ctx.font = `${canvas.width*0.03}px 'Montserrat', sans-serif`;
+                    ctx.fillText('Press SPACE to return to menu', canvas.width/2, canvas.height/2+30);
                 }
             }
 
@@ -868,15 +661,13 @@
                 keys[e.key] = true;
                 if (e.key === ' ' && gameState === 'gameover') {
                     gameState = 'menu'; menuOverlay.style.display = 'flex'; buildMenu();
-                    scores = { left: 0, right: 0 }; winner = null;
-                    ingameMenuBtn.style.display = 'none';
-                    hideIngameMenu();
+                    scores = { left:0, right:0 }; winner = null;
+                    ingameMenuBtn.style.display = 'none'; hideIngameMenu();
                 }
                 if (e.key === 'Escape') {
                     if (gameMode === 'online' && ws) ws.close();
                     gameState = 'menu'; menuOverlay.style.display = 'flex'; buildMenu();
-                    ingameMenuBtn.style.display = 'none';
-                    hideIngameMenu();
+                    ingameMenuBtn.style.display = 'none'; hideIngameMenu();
                 }
             });
             window.addEventListener('keyup', e => { keys[e.key] = false; });
@@ -886,9 +677,9 @@
             menuOverlay.style.display = 'flex';
             ingameMenuBtn.style.display = 'none';
             hideIngameMenu();
+            waitingOverlay.style.display = 'none';
             loop();
         }
     </script>
 </body>
-
 </html>
