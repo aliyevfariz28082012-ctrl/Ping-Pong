@@ -1,7 +1,7 @@
 {
     "name": "pong-online",
     "version": "1.0.0",
-    "description": "Online multiplayer Pong game",
+    "description": "Online multiplayer Pong with auth",
     "main": "server.js",
     "scripts": {
         "start": "node server.js"
