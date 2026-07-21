@@ -54,7 +54,7 @@ const WIN_SCORE = 11;
 const DEUCE_GAP = 2;
 const GAME_WIDTH = 800;
 const GAME_HEIGHT = 500;
-const TICK_RATE = 1000 / 60;
+const TICK_RATE = 1000 / 60; // 60 FPS
 
 let waitingPlayer = null;
 let games = new Map();
@@ -63,12 +63,96 @@ function resetBall() {
     const speed = GAME_WIDTH * 0.0055;
     const angle = (Math.random() - 0.5) * 0.8;
     return {
-        x: GAME_WIDTH/2, y: GAME_HEIGHT/2,
-        vx: (Math.random()>0.5?1:-1) * speed * Math.cos(angle),
+        x: GAME_WIDTH / 2,
+        y: GAME_HEIGHT / 2,
+        vx: (Math.random() > 0.5 ? 1 : -1) * speed * Math.cos(angle),
         vy: speed * Math.sin(angle),
         speed: speed,
         r: 10
     };
+}
+
+// Sub‑stepping toplu toqquşma yoxlaması
+function moveBall(game) {
+    const ball = game.ball;
+    const maxStep = ball.r * 0.8; // topun radiusundan kiçik addım
+    let remaining = Math.sqrt(ball.vx * ball.vx + ball.vy * ball.vy);
+    if (remaining === 0) return;
+
+    const steps = Math.ceil(remaining / maxStep);
+    const stepX = ball.vx / steps;
+    const stepY = ball.vy / steps;
+
+    for (let i = 0; i < steps; i++) {
+        ball.x += stepX;
+        ball.y += stepY;
+
+        // divar toqquşması
+        if (ball.y - ball.r <= 0 || ball.y + ball.r >= GAME_HEIGHT) {
+            ball.vy *= -1;
+            stepY * -1; // qalan addımlar üçün istiqaməti dəyiş
+            ball.y = Math.max(ball.r, Math.min(GAME_HEIGHT - ball.r, ball.y));
+        }
+
+        // çubuq toqquşmaları
+        const lp = { x: 24, y: game.leftY, w: 10, h: 100 };
+        const rp = { x: GAME_WIDTH - 34, y: game.rightY, w: 10, h: 100 };
+
+        const paddleHit = (paddle, side) => {
+            if (side === 'left' && ball.vx < 0) {
+                return ball.x - ball.r <= paddle.x + paddle.w &&
+                       ball.x + ball.r >= paddle.x &&
+                       ball.y + ball.r > paddle.y &&
+                       ball.y - ball.r < paddle.y + paddle.h;
+            } else if (side === 'right' && ball.vx > 0) {
+                return ball.x + ball.r >= paddle.x &&
+                       ball.x - ball.r <= paddle.x + paddle.w &&
+                       ball.y + ball.r > paddle.y &&
+                       ball.y - ball.r < paddle.y + paddle.h;
+            }
+            return false;
+        };
+
+        if (paddleHit(lp, 'left')) {
+            const hitPos = (ball.y - (lp.y + lp.h / 2)) / (lp.h / 2);
+            ball.speed += 0.3;
+            ball.vx = Math.abs(ball.vx) + 0.3;
+            ball.vy = hitPos * ball.speed * 0.8;
+            ball.x = lp.x + lp.w + ball.r; // topu çubuğun sağına yerləşdir
+            break; // toqquşma baş verdisə, qalan addımları ləğv et
+        }
+
+        if (paddleHit(rp, 'right')) {
+            const hitPos = (ball.y - (rp.y + rp.h / 2)) / (rp.h / 2);
+            ball.speed += 0.3;
+            ball.vx = -(Math.abs(ball.vx) + 0.3);
+            ball.vy = hitPos * ball.speed * 0.8;
+            ball.x = rp.x - ball.r;
+            break;
+        }
+
+        // qol yoxlaması
+        if (ball.x + ball.r < 0) {
+            game.scores.right++;
+            if (game.scores.right >= WIN_SCORE && game.scores.right - game.scores.left >= DEUCE_GAP) {
+                game.winner = 'right';
+                updateStats(game);
+            } else {
+                game.ball = resetBall();
+            }
+            return;
+        }
+        if (ball.x - ball.r > GAME_WIDTH) {
+            game.scores.left++;
+            if (game.scores.left >= WIN_SCORE && game.scores.left - game.scores.right >= DEUCE_GAP) {
+                game.winner = 'left';
+                updateStats(game);
+            } else {
+                game.ball = resetBall();
+            }
+            return;
+        }
+    }
 }
 
 function createGame(p1, p2) {
@@ -76,8 +160,8 @@ function createGame(p1, p2) {
         id: Date.now().toString(),
         players: [p1, p2],
         ball: resetBall(),
-        leftY: GAME_HEIGHT/2 - 50,
-        rightY: GAME_HEIGHT/2 - 50,
+        leftY: GAME_HEIGHT / 2 - 50,
+        rightY: GAME_HEIGHT / 2 - 50,
         scores: { left: 0, right: 0 },
         winner: null,
         interval: null
@@ -89,43 +173,17 @@ function createGame(p1, p2) {
             games.delete(game.id);
             return;
         }
-        const ball = game.ball;
-        ball.x += ball.vx;
-        ball.y += ball.vy;
-        if (ball.y - ball.r <= 0 || ball.y + ball.r >= GAME_HEIGHT) ball.vy *= -1;
 
-        const lp = { x: 24, y: game.leftY, w: 10, h: 100 };
-        const rp = { x: GAME_WIDTH-34, y: game.rightY, w: 10, h: 100 };
-        const hit = (p) => ball.x+ball.r > p.x && ball.x-ball.r < p.x+p.w &&
-                            ball.y+ball.r > p.y && ball.y-ball.r < p.y+p.h;
-        if (ball.vx < 0 && hit(lp)) {
-            const hp = (ball.y - (lp.y+lp.h/2)) / (lp.h/2);
-            ball.speed += 0.3;
-            ball.vx = Math.abs(ball.vx) + 0.3;
-            ball.vy = hp * ball.speed * 0.8;
-            ball.x = lp.x + lp.w + ball.r;
-        } else if (ball.vx > 0 && hit(rp)) {
-            const hp = (ball.y - (rp.y+rp.h/2)) / (rp.h/2);
-            ball.speed += 0.3;
-            ball.vx = -(Math.abs(ball.vx) + 0.3);
-            ball.vy = hp * ball.speed * 0.8;
-            ball.x = rp.x - ball.r;
-        }
-        if (ball.x + ball.r < 0) {
-            game.scores.right++;
-            if (game.scores.right >= WIN_SCORE && game.scores.right - game.scores.left >= DEUCE_GAP) {
-                game.winner = 'right';
-                updateStats(game);
-            } else game.ball = resetBall();
-        } else if (ball.x - ball.r > GAME_WIDTH) {
-            game.scores.left++;
-            if (game.scores.left >= WIN_SCORE && game.scores.left - game.scores.right >= DEUCE_GAP) {
-                game.winner = 'left';
-                updateStats(game);
-            } else game.ball = resetBall();
-        }
-        const state = { type:'state', ball:{x:ball.x,y:ball.y,vx:ball.vx,vy:ball.vy},
-                        leftY:game.leftY, rightY:game.rightY, scores:game.scores, winner:game.winner };
+        moveBall(game);
+
+        const state = {
+            type: 'state',
+            ball: { x: game.ball.x, y: game.ball.y, vx: game.ball.vx, vy: game.ball.vy },
+            leftY: game.leftY,
+            rightY: game.rightY,
+            scores: game.scores,
+            winner: game.winner
+        };
         p1.send(JSON.stringify(state));
         p2.send(JSON.stringify(state));
 
@@ -155,11 +213,11 @@ function updateStats(game) {
 
 function broadcastLeaderboard() {
     const leaders = [...users.values()]
-        .sort((a,b) => b.wins - a.wins)
+        .sort((a, b) => b.wins - a.wins)
         .slice(0, 10)
-        .map(u => ({ fullname: u.fullname, name: u.username, wins: u.wins, losses: u.losses }));
+        .map(u => ({ username: u.username, fullname: u.fullname, wins: u.wins, losses: u.losses }));
     wss.clients.forEach(c => {
-        if (c.readyState === WebSocket.OPEN) c.send(JSON.stringify({ type:'leaderboard', leaders }));
+        if (c.readyState === WebSocket.OPEN) c.send(JSON.stringify({ type: 'leaderboard', leaders }));
     });
 }
 
@@ -181,8 +239,8 @@ wss.on('connection', (ws, req) => {
                 const p2 = ws;
                 const game = createGame(p1, p2);
                 games.set(game.id, game);
-                p1.send(JSON.stringify({ type:'opponent', opponent: users.get(p2._username).fullname, side:'left' }));
-                p2.send(JSON.stringify({ type:'opponent', opponent: users.get(p1._username).fullname, side:'right' }));
+                p1.send(JSON.stringify({ type: 'opponent', opponent: users.get(p2._username).fullname, side: 'left' }));
+                p2.send(JSON.stringify({ type: 'opponent', opponent: users.get(p1._username).fullname, side: 'right' }));
                 waitingPlayer = null;
             } else {
                 waitingPlayer = ws;
@@ -190,7 +248,6 @@ wss.on('connection', (ws, req) => {
         } else if (data.type === 'input') {
             for (let [id, game] of games) {
                 if (game.players.includes(ws)) {
-                    // data.y is already virtual (0..500)
                     if (data.side === 'left') game.leftY = data.y;
                     else game.rightY = data.y;
                     break;
@@ -231,7 +288,7 @@ wss.on('connection', (ws, req) => {
                 clearInterval(game.interval);
                 const opponent = game.players.find(p => p !== ws);
                 if (opponent && opponent.readyState === WebSocket.OPEN) {
-                    opponent.send(JSON.stringify({ type:'opponent_left' }));
+                    opponent.send(JSON.stringify({ type: 'opponent_left' }));
                 }
                 games.delete(id);
                 break;
