@@ -487,15 +487,10 @@
                     waitingText.textContent = 'Connecting to server...';
                     menuOverlay.style.display = 'none';
 
-                    // 30 saniyə ərzində serverə bağlantı qurulmasa, menyuya dön
+                    // 35 saniyə gözləmə (Render yuxudan oyanma + bağlantı)
                     connectionTimer = setTimeout(() => {
-                        waitingText.textContent = 'Server is waking up... Please wait 30s';
-                        setTimeout(() => {
-                            if (ws && (ws.readyState === WebSocket.CONNECTING)) ws.close();
-                            waitingOverlay.style.display = 'none';
-                            returnToMenu();
-                        }, 2000);
-                    }, 30000);
+                        waitingText.textContent = 'Server waking up... Please wait (30-35s)';
+                    }, 5000);
 
                     ws = new WebSocket(`${SERVER_URL}?token=${token}`);
 
@@ -504,7 +499,6 @@
                         waitingText.textContent = 'Waiting for opponent...';
                         ws.send(JSON.stringify({ type: 'join' }));
 
-                        // 60 saniyə rəqib tapılmazsa
                         connectTimeout = setTimeout(() => {
                             if (gameState === 'menu' || (gameMode === 'online' && gameState !== 'playing')) {
                                 if (ws) ws.close();
