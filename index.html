@@ -381,7 +381,6 @@
             const SERVER_URL = `${protocol}://${window.location.host}`;
             const WIN_SCORE = 11;
             const DEUCE_GAP = 2;
-            // Virtual server dimensions
             const VIRTUAL_W = 800;
             const VIRTUAL_H = 500;
 
@@ -421,12 +420,16 @@
                 hideIngameMenu();
                 if (gameMode === 'online' && ws && ws.readyState === WebSocket.OPEN) {
                     ws.send(JSON.stringify({ type: 'leave' }));
+                    // wait for server state to trigger gameover
+                } else {
+                    // local/bot: just return to menu
+                    gameState = 'menu';
+                    menuOverlay.style.display = 'flex';
+                    buildMenu();
+                    ingameMenuBtn.style.display = 'none';
+                    scores = { left: 0, right: 0 };
+                    winner = null;
                 }
-                gameState = 'menu';
-                menuOverlay.style.display = 'flex';
-                buildMenu();
-                ingameMenuBtn.style.display = 'none';
-                scores = { left: 0, right: 0 }; winner = null;
             });
 
             function resize() {
@@ -437,7 +440,6 @@
             window.addEventListener('resize', resize);
 
             function initPositions() {
-                // Paddle dimensions relative to canvas
                 const pw = Math.max(canvas.width * 0.012, 8);
                 const ph = Math.max(canvas.height * 0.16, 55);
                 const r = Math.max(Math.min(canvas.width, canvas.height) * 0.015, 6);
@@ -506,11 +508,12 @@
                         startGame('online');
                     } else if (data.type === 'state') {
                         if (gameMode === 'online' && gameState === 'playing') {
-                            // Convert virtual coordinates to screen coordinates
+                            // Update ball position (scaled)
                             ball.x = data.ball.x * (canvas.width / VIRTUAL_W);
                             ball.y = data.ball.y * (canvas.height / VIRTUAL_H);
                             ball.vx = data.ball.vx * (canvas.width / VIRTUAL_W);
                             ball.vy = data.ball.vy * (canvas.height / VIRTUAL_H);
+                            // Update opponent's paddle
                             if (onlineSide === 'left') {
                                 rightPaddle.y = data.rightY * (canvas.height / VIRTUAL_H);
                             } else {
@@ -577,17 +580,29 @@
 
             function update() {
                 if (gameState !== 'playing') return;
+
+                const speed = canvas.height * 0.008;
+                // Online: control own paddle via keys
                 if (gameMode === 'online') {
+                    if (onlineSide === 'left') {
+                        if (keys['w']) leftPaddle.y -= speed;
+                        if (keys['s']) leftPaddle.y += speed;
+                        leftPaddle.y = Math.max(0, Math.min(canvas.height - leftPaddle.h, leftPaddle.y));
+                    } else {
+                        if (keys['ArrowUp']) rightPaddle.y -= speed;
+                        if (keys['ArrowDown']) rightPaddle.y += speed;
+                        rightPaddle.y = Math.max(0, Math.min(canvas.height - rightPaddle.h, rightPaddle.y));
+                    }
+
                     if (ws && ws.readyState === WebSocket.OPEN) {
-                        // Send paddle position scaled to virtual height
                         const paddleY = onlineSide === 'left' ? leftPaddle.y : rightPaddle.y;
                         const virtualY = paddleY * (VIRTUAL_H / canvas.height);
                         ws.send(JSON.stringify({ type: 'input', y: virtualY, side: onlineSide }));
                     }
                     return;
                 }
+
                 // Local / bot update
-                const speed = canvas.height * 0.008;
                 if (gameMode === 'bot') {
                     if (keys['w']) leftPaddle.y -= speed;
                     if (keys['s']) leftPaddle.y += speed;
@@ -628,11 +643,15 @@
 
             function checkWin() {
                 if (scores.left >= WIN_SCORE && scores.left - scores.right >= DEUCE_GAP) {
-                    winner = 'Left Player'; gameState = 'gameover';
-                    ingameMenuBtn.style.display = 'none'; hideIngameMenu();
+                    winner = 'left'; // keep as side identifier
+                    gameState = 'gameover';
+                    ingameMenuBtn.style.display = 'none';
+                    hideIngameMenu();
                 } else if (scores.right >= WIN_SCORE && scores.right - scores.left >= DEUCE_GAP) {
-                    winner = 'Right Player'; gameState = 'gameover';
-                    ingameMenuBtn.style.display = 'none'; hideIngameMenu();
+                    winner = 'right';
+                    gameState = 'gameover';
+                    ingameMenuBtn.style.display = 'none';
+                    hideIngameMenu();
                 }
             }
 
@@ -664,10 +683,20 @@
                     ctx.fillStyle = 'rgba(0,0,0,0.7)';
                     ctx.fillRect(0,0,canvas.width,canvas.height);
                     ctx.fillStyle = '#fff';
-                    ctx.font = `${canvas.width*0.06}px 'Montserrat', sans-serif`;
-                    ctx.fillText(`${winner} Wins!`, canvas.width/2, canvas.height/2-30);
+                    let endText = '';
+                    if (gameMode === 'online') {
+                        if ((winner === 'left' && onlineSide === 'left') || (winner === 'right' && onlineSide === 'right')) {
+                            endText = 'You Won!';
+                        } else {
+                            endText = 'You Lost!';
+                        }
+                    } else {
+                        endText = `${winner === 'left' ? 'Left Player' : 'Right Player'} Wins!`;
+                    }
+                    ctx.font = `bold ${canvas.width*0.07}px 'Montserrat', sans-serif`;
+                    ctx.fillText(endText, canvas.width/2, canvas.height/2 - 40);
                     ctx.font = `${canvas.width*0.03}px 'Montserrat', sans-serif`;
-                    ctx.fillText('Press SPACE to return to menu', canvas.width/2, canvas.height/2+30);
+                    ctx.fillText('Press SPACE to return to menu', canvas.width/2, canvas.height/2 + 20);
                 }
             }
 
@@ -676,14 +705,21 @@
             window.addEventListener('keydown', e => {
                 keys[e.key] = true;
                 if (e.key === ' ' && gameState === 'gameover') {
-                    gameState = 'menu'; menuOverlay.style.display = 'flex'; buildMenu();
-                    scores = { left:0, right:0 }; winner = null;
-                    ingameMenuBtn.style.display = 'none'; hideIngameMenu();
+                    gameState = 'menu';
+                    menuOverlay.style.display = 'flex';
+                    buildMenu();
+                    scores = { left:0, right:0 };
+                    winner = null;
+                    ingameMenuBtn.style.display = 'none';
+                    hideIngameMenu();
                 }
                 if (e.key === 'Escape') {
                     if (gameMode === 'online' && ws) ws.close();
-                    gameState = 'menu'; menuOverlay.style.display = 'flex'; buildMenu();
-                    ingameMenuBtn.style.display = 'none'; hideIngameMenu();
+                    gameState = 'menu';
+                    menuOverlay.style.display = 'flex';
+                    buildMenu();
+                    ingameMenuBtn.style.display = 'none';
+                    hideIngameMenu();
                 }
             });
             window.addEventListener('keyup', e => { keys[e.key] = false; });
