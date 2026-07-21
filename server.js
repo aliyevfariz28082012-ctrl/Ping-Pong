@@ -54,7 +54,7 @@ const WIN_SCORE = 11;
 const DEUCE_GAP = 2;
 const GAME_WIDTH = 800;
 const GAME_HEIGHT = 500;
-const TICK_RATE = 1000 / 60; // 60 FPS
+const TICK_RATE = 1000 / 60;
 
 let waitingPlayer = null;
 let games = new Map();
@@ -72,10 +72,9 @@ function resetBall() {
     };
 }
 
-// Sub‑stepping toplu toqquşma yoxlaması
 function moveBall(game) {
     const ball = game.ball;
-    const maxStep = ball.r * 0.8; // topun radiusundan kiçik addım
+    const maxStep = ball.r * 0.8;
     let remaining = Math.sqrt(ball.vx * ball.vx + ball.vy * ball.vy);
     if (remaining === 0) return;
 
@@ -87,14 +86,11 @@ function moveBall(game) {
         ball.x += stepX;
         ball.y += stepY;
 
-        // divar toqquşması
         if (ball.y - ball.r <= 0 || ball.y + ball.r >= GAME_HEIGHT) {
             ball.vy *= -1;
-            stepY * -1; // qalan addımlar üçün istiqaməti dəyiş
             ball.y = Math.max(ball.r, Math.min(GAME_HEIGHT - ball.r, ball.y));
         }
 
-        // çubuq toqquşmaları
         const lp = { x: 24, y: game.leftY, w: 10, h: 100 };
         const rp = { x: GAME_WIDTH - 34, y: game.rightY, w: 10, h: 100 };
 
@@ -118,8 +114,8 @@ function moveBall(game) {
             ball.speed += 0.3;
             ball.vx = Math.abs(ball.vx) + 0.3;
             ball.vy = hitPos * ball.speed * 0.8;
-            ball.x = lp.x + lp.w + ball.r; // topu çubuğun sağına yerləşdir
-            break; // toqquşma baş verdisə, qalan addımları ləğv et
+            ball.x = lp.x + lp.w + ball.r;
+            break;
         }
 
         if (paddleHit(rp, 'right')) {
@@ -131,7 +127,6 @@ function moveBall(game) {
             break;
         }
 
-        // qol yoxlaması
         if (ball.x + ball.r < 0) {
             game.scores.right++;
             if (game.scores.right >= WIN_SCORE && game.scores.right - game.scores.left >= DEUCE_GAP) {
@@ -234,7 +229,8 @@ wss.on('connection', (ws, req) => {
     ws.on('message', (msg) => {
         const data = JSON.parse(msg);
         if (data.type === 'join') {
-            if (waitingPlayer && waitingPlayer !== ws) {
+            // Əgər gözləyən varsa və bağlantısı açıqdırsa, oyunu başlat
+            if (waitingPlayer && waitingPlayer !== ws && waitingPlayer.readyState === WebSocket.OPEN) {
                 const p1 = waitingPlayer;
                 const p2 = ws;
                 const game = createGame(p1, p2);
@@ -243,6 +239,11 @@ wss.on('connection', (ws, req) => {
                 p2.send(JSON.stringify({ type: 'opponent', opponent: users.get(p1._username).fullname, side: 'right' }));
                 waitingPlayer = null;
             } else {
+                // Gözləyən yoxdursa, özünü gözləməyə qoy
+                if (waitingPlayer && waitingPlayer !== ws) {
+                    // Əgər gözləyən varsa amma bağlantısı bağlıdırsa, onu ləğv et
+                    waitingPlayer = null;
+                }
                 waitingPlayer = ws;
             }
         } else if (data.type === 'input') {
