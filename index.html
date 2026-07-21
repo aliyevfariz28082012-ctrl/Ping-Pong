@@ -366,7 +366,7 @@
                 let touchY = 0;
                 let leaderboardData = [];
                 let connectTimeout = null;
-                let connectionTimer = null; // əlavə: bağlantı aça bilməzsə geri dön
+                let connectionTimer = null;
 
                 function returnToMenu() {
                     gameState = 'menu';
@@ -487,15 +487,15 @@
                     waitingText.textContent = 'Connecting to server...';
                     menuOverlay.style.display = 'none';
 
-                    // 10 saniyə ərzində bağlantı qurulmasa, menyuya dön
+                    // 30 saniyə ərzində serverə bağlantı qurulmasa, menyuya dön
                     connectionTimer = setTimeout(() => {
-                        waitingText.textContent = 'Could not connect. Returning to menu...';
+                        waitingText.textContent = 'Server is waking up... Please wait 30s';
                         setTimeout(() => {
                             if (ws && (ws.readyState === WebSocket.CONNECTING)) ws.close();
                             waitingOverlay.style.display = 'none';
                             returnToMenu();
                         }, 2000);
-                    }, 10000);
+                    }, 30000);
 
                     ws = new WebSocket(`${SERVER_URL}?token=${token}`);
 
@@ -600,7 +600,6 @@
                     if (ws && ws.readyState === WebSocket.OPEN) ws.send(JSON.stringify({ type: 'getLeaderboard' }));
                 }
 
-                // Touch Handling
                 function handleTouchMove(e) {
                     e.preventDefault();
                     if (gameState !== 'playing') return;
