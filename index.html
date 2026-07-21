@@ -365,8 +365,6 @@
                 let touchActive = false;
                 let touchY = 0;
                 let leaderboardData = [];
-                let connectTimeout = null;
-                let connectionTimer = null;
 
                 function returnToMenu() {
                     gameState = 'menu';
@@ -480,39 +478,18 @@
 
                 function connectOnline() {
                     if (ws) ws.close();
-                    if (connectTimeout) clearTimeout(connectTimeout);
-                    if (connectionTimer) clearTimeout(connectionTimer);
-
                     waitingOverlay.style.display = 'flex';
                     waitingText.textContent = 'Connecting to server...';
                     menuOverlay.style.display = 'none';
 
-                    // 35 saniyə gözləmə (Render yuxudan oyanma + bağlantı)
-                    connectionTimer = setTimeout(() => {
-                        waitingText.textContent = 'Server waking up... Please wait (30-35s)';
-                    }, 5000);
-
                     ws = new WebSocket(`${SERVER_URL}?token=${token}`);
-
                     ws.onopen = () => {
-                        clearTimeout(connectionTimer);
                         waitingText.textContent = 'Waiting for opponent...';
                         ws.send(JSON.stringify({ type: 'join' }));
-
-                        connectTimeout = setTimeout(() => {
-                            if (gameState === 'menu' || (gameMode === 'online' && gameState !== 'playing')) {
-                                if (ws) ws.close();
-                                waitingOverlay.style.display = 'none';
-                                returnToMenu();
-                                alert('No opponent found. Returning to menu.');
-                            }
-                        }, 60000);
                     };
-
                     ws.onmessage = (msg) => {
                         const data = JSON.parse(msg.data);
                         if (data.type === 'opponent') {
-                            clearTimeout(connectTimeout);
                             onlineSide = data.side;
                             waitingOverlay.style.display = 'none';
                             startGame('online');
@@ -548,20 +525,14 @@
                             if (rankingModal.style.display === 'flex') renderRankingList();
                         }
                     };
-
                     ws.onerror = () => {
-                        clearTimeout(connectTimeout);
-                        clearTimeout(connectionTimer);
                         waitingText.textContent = 'Connection error. Returning...';
                         setTimeout(() => {
                             waitingOverlay.style.display = 'none';
                             returnToMenu();
                         }, 2000);
                     };
-
                     ws.onclose = () => {
-                        clearTimeout(connectTimeout);
-                        clearTimeout(connectionTimer);
                         if (gameMode === 'online' && gameState === 'playing') {
                             returnToMenu();
                         } else if (waitingOverlay.style.display === 'flex') {
@@ -573,8 +544,6 @@
 
                 waitingCancel.addEventListener('click', () => {
                     if (ws) ws.close();
-                    if (connectTimeout) clearTimeout(connectTimeout);
-                    if (connectionTimer) clearTimeout(connectionTimer);
                     waitingOverlay.style.display = 'none';
                     returnToMenu();
                 });
