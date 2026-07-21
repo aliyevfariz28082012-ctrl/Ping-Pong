@@ -63,10 +63,11 @@ function resetBall() {
     const speed = GAME_WIDTH * 0.0055;
     const angle = (Math.random() - 0.5) * 0.8;
     return {
-        x: GAME_WIDTH / 2, y: GAME_HEIGHT / 2,
-        vx: (Math.random() > 0.5 ? 1 : -1) * speed * Math.cos(angle),
+        x: GAME_WIDTH/2, y: GAME_HEIGHT/2,
+        vx: (Math.random()>0.5?1:-1) * speed * Math.cos(angle),
         vy: speed * Math.sin(angle),
-        speed, r: 10
+        speed: speed,
+        r: 10
     };
 }
 
@@ -75,8 +76,8 @@ function createGame(p1, p2) {
         id: Date.now().toString(),
         players: [p1, p2],
         ball: resetBall(),
-        leftY: GAME_HEIGHT / 2 - 50,
-        rightY: GAME_HEIGHT / 2 - 50,
+        leftY: GAME_HEIGHT/2 - 50,
+        rightY: GAME_HEIGHT/2 - 50,
         scores: { left: 0, right: 0 },
         winner: null,
         interval: null
@@ -94,17 +95,19 @@ function createGame(p1, p2) {
         if (ball.y - ball.r <= 0 || ball.y + ball.r >= GAME_HEIGHT) ball.vy *= -1;
 
         const lp = { x: 24, y: game.leftY, w: 10, h: 100 };
-        const rp = { x: GAME_WIDTH - 34, y: game.rightY, w: 10, h: 100 };
-        const hit = (p) => ball.x + ball.r > p.x && ball.x - ball.r < p.x + p.w &&
-            ball.y + ball.r > p.y && ball.y - ball.r < p.y + p.h;
+        const rp = { x: GAME_WIDTH-34, y: game.rightY, w: 10, h: 100 };
+        const hit = (p) => ball.x+ball.r > p.x && ball.x-ball.r < p.x+p.w &&
+                            ball.y+ball.r > p.y && ball.y-ball.r < p.y+p.h;
         if (ball.vx < 0 && hit(lp)) {
-            const hp = (ball.y - (lp.y + lp.h / 2)) / (lp.h / 2);
-            ball.vx = Math.abs(ball.vx);
+            const hp = (ball.y - (lp.y+lp.h/2)) / (lp.h/2);
+            ball.speed += 0.3;
+            ball.vx = Math.abs(ball.vx) + 0.3;
             ball.vy = hp * ball.speed * 0.8;
             ball.x = lp.x + lp.w + ball.r;
         } else if (ball.vx > 0 && hit(rp)) {
-            const hp = (ball.y - (rp.y + rp.h / 2)) / (rp.h / 2);
-            ball.vx = -Math.abs(ball.vx);
+            const hp = (ball.y - (rp.y+rp.h/2)) / (rp.h/2);
+            ball.speed += 0.3;
+            ball.vx = -(Math.abs(ball.vx) + 0.3);
             ball.vy = hp * ball.speed * 0.8;
             ball.x = rp.x - ball.r;
         }
@@ -121,10 +124,8 @@ function createGame(p1, p2) {
                 updateStats(game);
             } else game.ball = resetBall();
         }
-        const state = {
-            type: 'state', ball: { x: ball.x, y: ball.y, vx: ball.vx, vy: ball.vy },
-            leftY: game.leftY, rightY: game.rightY, scores: game.scores, winner: game.winner
-        };
+        const state = { type:'state', ball:{x:ball.x,y:ball.y,vx:ball.vx,vy:ball.vy},
+                        leftY:game.leftY, rightY:game.rightY, scores:game.scores, winner:game.winner };
         p1.send(JSON.stringify(state));
         p2.send(JSON.stringify(state));
 
@@ -154,11 +155,11 @@ function updateStats(game) {
 
 function broadcastLeaderboard() {
     const leaders = [...users.values()]
-        .sort((a, b) => b.wins - a.wins)
+        .sort((a,b) => b.wins - a.wins)
         .slice(0, 10)
         .map(u => ({ fullname: u.fullname, name: u.username, wins: u.wins, losses: u.losses }));
     wss.clients.forEach(c => {
-        if (c.readyState === WebSocket.OPEN) c.send(JSON.stringify({ type: 'leaderboard', leaders }));
+        if (c.readyState === WebSocket.OPEN) c.send(JSON.stringify({ type:'leaderboard', leaders }));
     });
 }
 
@@ -180,8 +181,8 @@ wss.on('connection', (ws, req) => {
                 const p2 = ws;
                 const game = createGame(p1, p2);
                 games.set(game.id, game);
-                p1.send(JSON.stringify({ type: 'opponent', opponent: users.get(p2._username).fullname, side: 'left' }));
-                p2.send(JSON.stringify({ type: 'opponent', opponent: users.get(p1._username).fullname, side: 'right' }));
+                p1.send(JSON.stringify({ type:'opponent', opponent: users.get(p2._username).fullname, side:'left' }));
+                p2.send(JSON.stringify({ type:'opponent', opponent: users.get(p1._username).fullname, side:'right' }));
                 waitingPlayer = null;
             } else {
                 waitingPlayer = ws;
@@ -189,22 +190,20 @@ wss.on('connection', (ws, req) => {
         } else if (data.type === 'input') {
             for (let [id, game] of games) {
                 if (game.players.includes(ws)) {
+                    // data.y is already virtual (0..500)
                     if (data.side === 'left') game.leftY = data.y;
                     else game.rightY = data.y;
                     break;
                 }
             }
         } else if (data.type === 'leave') {
-            // Player intentionally leaves the game
             for (let [id, game] of games) {
                 if (game.players.includes(ws)) {
                     clearInterval(game.interval);
-                    // Determine winner: the other player wins
-                    const leaverSide = game.players.indexOf(ws); // 0 = left, 1 = right
+                    const leaverSide = game.players.indexOf(ws);
                     game.winner = leaverSide === 0 ? 'right' : 'left';
-                    game.scores[game.winner] = WIN_SCORE; // force win score
+                    game.scores[game.winner] = WIN_SCORE;
                     updateStats(game);
-                    // Notify opponent
                     const opponent = game.players.find(p => p !== ws);
                     if (opponent && opponent.readyState === WebSocket.OPEN) {
                         opponent.send(JSON.stringify({
@@ -232,7 +231,7 @@ wss.on('connection', (ws, req) => {
                 clearInterval(game.interval);
                 const opponent = game.players.find(p => p !== ws);
                 if (opponent && opponent.readyState === WebSocket.OPEN) {
-                    opponent.send(JSON.stringify({ type: 'opponent_left' }));
+                    opponent.send(JSON.stringify({ type:'opponent_left' }));
                 }
                 games.delete(id);
                 break;
