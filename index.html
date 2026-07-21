@@ -365,6 +365,7 @@
                 let touchActive = false;
                 let touchY = 0;
                 let leaderboardData = [];
+                let connectTimeout = null; // timeout ID for 60 seconds
 
                 function returnToMenu() {
                     gameState = 'menu';
@@ -478,11 +479,24 @@
 
                 function connectOnline() {
                     if (ws) ws.close();
+                    if (connectTimeout) clearTimeout(connectTimeout);
+
                     waitingOverlay.style.display = 'flex';
                     waitingText.textContent = 'Connecting to server...';
                     menuOverlay.style.display = 'none';
 
                     ws = new WebSocket(`${SERVER_URL}?token=${token}`);
+
+                    // 60 saniyəlik timeout
+                    connectTimeout = setTimeout(() => {
+                        if (gameState === 'menu' || (gameMode === 'online' && gameState !== 'playing')) {
+                            if (ws) ws.close();
+                            waitingOverlay.style.display = 'none';
+                            returnToMenu();
+                            alert('No opponent found. Please try again.');
+                        }
+                    }, 60000);
+
                     ws.onopen = () => {
                         waitingText.textContent = 'Waiting for opponent...';
                         ws.send(JSON.stringify({ type: 'join' }));
@@ -490,6 +504,7 @@
                     ws.onmessage = (msg) => {
                         const data = JSON.parse(msg.data);
                         if (data.type === 'opponent') {
+                            clearTimeout(connectTimeout);
                             onlineSide = data.side;
                             waitingOverlay.style.display = 'none';
                             startGame('online');
@@ -525,17 +540,25 @@
                             if (rankingModal.style.display === 'flex') renderRankingList();
                         }
                     };
-                    ws.onerror = () => { waitingText.textContent = 'Connection failed. Please try again.'; };
+                    ws.onerror = () => {
+                        clearTimeout(connectTimeout);
+                        waitingText.textContent = 'Connection failed. Please try again.';
+                    };
                     ws.onclose = () => {
+                        clearTimeout(connectTimeout);
                         if (gameMode === 'online' && gameState === 'playing') {
                             returnToMenu();
+                        } else if (waitingOverlay.style.display === 'flex') {
+                            // Hələ gözləmə mərhələsindədirsə, menyuya dön
+                            waitingOverlay.style.display = 'none';
+                            returnToMenu();
                         }
-                        waitingOverlay.style.display = 'none';
                     };
                 }
 
                 waitingCancel.addEventListener('click', () => {
                     if (ws) ws.close();
+                    if (connectTimeout) clearTimeout(connectTimeout);
                     waitingOverlay.style.display = 'none';
                     returnToMenu();
                 });
@@ -637,7 +660,6 @@
                         rightPaddle.y = Math.max(0, Math.min(canvas.height - rightPaddle.h, rightPaddle.y));
                     }
 
-                    // Predictive collision for local modes
                     const nextX = ball.x + ball.vx;
                     const nextY = ball.y + ball.vy;
                     if (nextY - ball.r <= 0 || nextY + ball.r >= canvas.height) ball.vy *= -1;
