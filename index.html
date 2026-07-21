@@ -1,120 +1,50 @@
 <!DOCTYPE html>
 <html lang="en">
-
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Pong - Online Multiplayer</title>
     <style>
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
-        }
-
+        * { margin: 0; padding: 0; box-sizing: border-box; }
         body {
-            width: 100vw;
-            height: 100vh;
-            background: #0a0a14;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            overflow: hidden;
-            font-family: 'Segoe UI', Courier, monospace;
+            width: 100vw; height: 100vh;
+            background: #0a0a14; display: flex; justify-content: center; align-items: center;
+            overflow: hidden; font-family: 'Segoe UI', Courier, monospace;
             user-select: none;
         }
-
-        canvas {
-            display: block;
-            position: absolute;
-            top: 0;
-            left: 0;
-        }
-
+        canvas { display: block; position: absolute; top: 0; left: 0; }
         #menu-overlay {
-            position: absolute;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            display: flex;
-            flex-direction: column;
-            justify-content: center;
-            align-items: center;
+            position: absolute; top: 0; left: 0; width: 100%; height: 100%;
+            display: flex; flex-direction: column; justify-content: center; align-items: center;
             pointer-events: none;
         }
-
         .menu-btn {
-            pointer-events: auto;
-            background: rgba(20, 20, 35, 0.9);
-            color: white;
-            border: 2px solid #00e5ff;
-            padding: 12px 32px;
-            margin: 8px;
-            font-size: 22px;
-            font-family: 'Segoe UI', monospace;
-            font-weight: bold;
-            border-radius: 40px;
-            cursor: pointer;
-            transition: 0.2s;
-            backdrop-filter: blur(10px);
-            min-width: 220px;
-            text-align: center;
+            pointer-events: auto; background: rgba(20,20,35,0.9);
+            color: white; border: 2px solid #00e5ff;
+            padding: 12px 32px; margin: 8px; font-size: 22px;
+            font-family: 'Segoe UI', monospace; font-weight: bold;
+            border-radius: 40px; cursor: pointer; transition: 0.2s;
+            backdrop-filter: blur(10px); min-width: 220px; text-align: center;
         }
-
-        .menu-btn:hover {
-            background: #00e5ff;
-            color: #000;
-            border-color: #fff;
-            box-shadow: 0 0 20px #00e5ff;
-        }
-
-        .menu-btn.selected {
-            background: #ff9800;
-            border-color: #ff9800;
-            color: #000;
-        }
-
-        #online-panel {
-            display: none;
-            flex-direction: column;
-            align-items: center;
-            margin-top: 15px;
-        }
-
-        #player-name {
-            padding: 10px;
-            font-size: 18px;
-            border-radius: 8px;
-            border: none;
-            background: #111;
-            color: white;
-            text-align: center;
-        }
-
+        .menu-btn:hover { background: #00e5ff; color: #000; border-color: #fff; box-shadow: 0 0 20px #00e5ff; }
+        .menu-btn.selected { background: #ff9800; border-color: #ff9800; color: #000; }
+        #online-panel { display: none; flex-direction: column; align-items: center; margin-top: 15px; }
+        #player-name { padding: 10px; font-size: 18px; border-radius: 8px; border: none; background: #111; color: white; text-align: center; }
         #leaderboard {
-            position: absolute;
-            right: 20px;
-            top: 20px;
-            background: rgba(0, 0, 0, 0.7);
-            color: white;
-            padding: 15px;
-            border-radius: 12px;
-            font-size: 14px;
-            max-height: 300px;
-            overflow-y: auto;
-            backdrop-filter: blur(8px);
-            border: 1px solid rgba(255, 255, 255, 0.2);
+            position: absolute; right: 20px; top: 20px;
+            background: rgba(0,0,0,0.7); color: white; padding: 15px;
+            border-radius: 12px; font-size: 14px; max-height: 300px; overflow-y: auto;
+            backdrop-filter: blur(8px); border: 1px solid rgba(255,255,255,0.2);
         }
+        .error-msg { color: #ff5252; margin-top: 10px; font-size: 14px; }
     </style>
 </head>
-
 <body>
     <canvas id="canvas"></canvas>
     <div id="menu-overlay"></div>
     <div id="leaderboard"></div>
     <script>
-        // WebSocket URL-i avtomatik olaraq təyin olunur (eyni server)
+        // ---------- SERVER URL (avtomatik) ----------
         const protocol = window.location.protocol === 'https:' ? 'wss' : 'ws';
         const SERVER_URL = `${protocol}://${window.location.host}`;
         const WIN_SCORE = 11;
@@ -128,10 +58,11 @@
         let gameState = 'menu';
         let gameMode = null;
         let difficulty = 'medium';
-        let playerName = 'Player';
+        let playerName = localStorage.getItem('pongPlayerName') || 'Player';
         let ws = null;
         let onlineOpponent = null;
         let onlineSide = null;
+        let connectionError = '';
 
         let leftPaddle, rightPaddle, ball, particles = [];
         let scores = { left: 0, right: 0 };
@@ -149,16 +80,16 @@
             const pw = Math.max(canvas.width * 0.012, 8);
             const ph = Math.max(canvas.height * 0.16, 55);
             const r = Math.max(Math.min(canvas.width, canvas.height) * 0.015, 6);
-            leftPaddle = { x: canvas.width * 0.03, y: canvas.height / 2 - ph / 2, w: pw, h: ph, color: '#00e5ff' };
-            rightPaddle = { x: canvas.width - canvas.width * 0.03 - pw, y: canvas.height / 2 - ph / 2, w: pw, h: ph, color: '#ff5252' };
-            ball = { x: canvas.width / 2, y: canvas.height / 2, r, vx: 0, vy: 0, speed: canvas.width * 0.0055 };
+            leftPaddle = { x: canvas.width*0.03, y: canvas.height/2 - ph/2, w: pw, h: ph, color: '#00e5ff' };
+            rightPaddle = { x: canvas.width - canvas.width*0.03 - pw, y: canvas.height/2 - ph/2, w: pw, h: ph, color: '#ff5252' };
+            ball = { x: canvas.width/2, y: canvas.height/2, r, vx: 0, vy: 0, speed: canvas.width*0.0055 };
             resetBall();
             particles = [];
         }
 
         function resetBall() {
-            ball.x = canvas.width / 2;
-            ball.y = canvas.height / 2;
+            ball.x = canvas.width/2;
+            ball.y = canvas.height/2;
             const angle = (Math.random() - 0.5) * 0.8;
             const dir = Math.random() > 0.5 ? 1 : -1;
             ball.vx = dir * ball.speed * Math.cos(angle);
@@ -166,50 +97,66 @@
         }
 
         function buildMenu() {
+            // localStorage'dan adı al
+            playerName = localStorage.getItem('pongPlayerName') || 'Player';
             menuOverlay.innerHTML = '';
-            [{ text: '1 Player (vs Bot)', action: () => startGame('bot') },
-            { text: '2 Players (Local)', action: () => startGame('local') },
-            { text: 'Online Multiplayer', action: () => showOnlinePanel() }]
-                .forEach(b => {
-                    const btn = document.createElement('div');
-                    btn.className = 'menu-btn';
-                    btn.textContent = b.text;
-                    btn.onclick = b.action;
-                    menuOverlay.appendChild(btn);
-                });
+            connectionError = '';
+
+            [{ text: '1 Player (vs Bot)', action: ()=> startGame('bot') },
+             { text: '2 Players (Local)', action: ()=> startGame('local') },
+             { text: 'Online Multiplayer', action: ()=> showOnlinePanel() }]
+            .forEach(b => {
+                const btn = document.createElement('div');
+                btn.className = 'menu-btn';
+                btn.textContent = b.text;
+                btn.onclick = b.action;
+                menuOverlay.appendChild(btn);
+            });
             const diffLabel = document.createElement('div');
             diffLabel.style.color = '#aaa'; diffLabel.style.marginTop = '15px';
             diffLabel.textContent = 'Difficulty (for Bot):';
             menuOverlay.appendChild(diffLabel);
             const diffRow = document.createElement('div');
             diffRow.style.display = 'flex'; diffRow.style.gap = '10px'; diffRow.style.marginTop = '8px';
-            ['easy', 'medium', 'hard'].forEach(d => {
+            ['easy','medium','hard'].forEach(d => {
                 const dbtn = document.createElement('div');
-                dbtn.className = 'menu-btn' + (difficulty === d ? ' selected' : '');
+                dbtn.className = 'menu-btn' + (difficulty===d?' selected':'');
                 dbtn.textContent = d.toUpperCase();
-                dbtn.onclick = () => { difficulty = d; buildMenu(); };
+                dbtn.onclick = ()=>{
+                    difficulty = d;
+                    buildMenu();
+                };
                 diffRow.appendChild(dbtn);
             });
             menuOverlay.appendChild(diffRow);
+
+            // Online panel
             const panel = document.createElement('div');
             panel.id = 'online-panel';
             panel.innerHTML = `
                 <input id="player-name" placeholder="Your Name" value="${playerName}">
                 <div class="menu-btn" id="connect-btn">Connect & Play</div>
                 <div style="color:#aaa; margin-top:8px;">Waiting for opponent...</div>
+                <div class="error-msg" id="error-msg"></div>
             `;
             menuOverlay.appendChild(panel);
             document.getElementById('connect-btn').onclick = connectOnline;
-            document.getElementById('player-name').oninput = e => playerName = e.target.value;
+            document.getElementById('player-name').oninput = function(e) {
+                playerName = e.target.value;
+                localStorage.setItem('pongPlayerName', playerName);
+            };
         }
 
         function showOnlinePanel() {
             document.getElementById('online-panel').style.display = 'flex';
+            // Clear error
+            const errEl = document.getElementById('error-msg');
+            if (errEl) errEl.textContent = '';
         }
 
         function startGame(mode) {
             gameMode = mode;
-            scores = { left: 0, right: 0 };
+            scores = { left:0, right:0 };
             winner = null;
             gameState = 'playing';
             menuOverlay.style.display = 'none';
@@ -226,11 +173,23 @@
         }
 
         function connectOnline() {
-            playerName = document.getElementById('player-name').value || 'Player';
+            // Update name from input
+            const nameInput = document.getElementById('player-name');
+            if (nameInput) {
+                playerName = nameInput.value.trim();
+                if (!playerName) playerName = 'Player';
+                localStorage.setItem('pongPlayerName', playerName);
+            }
+            // Close previous WebSocket
             if (ws) ws.close();
+            connectionError = '';
             ws = new WebSocket(SERVER_URL);
             ws.onopen = () => {
+                console.log('Connected to server');
                 ws.send(JSON.stringify({ type: 'register', name: playerName }));
+                // Immediately join
+                ws.send(JSON.stringify({ type: 'join', name: playerName }));
+                document.getElementById('online-panel').querySelector('div:last-child').textContent = 'Connected! Waiting for opponent...';
             };
             ws.onmessage = (msg) => {
                 const data = JSON.parse(msg.data);
@@ -255,7 +214,19 @@
                     renderLeaderboard(data.leaders);
                 }
             };
-            ws.onclose = () => { };
+            ws.onerror = (err) => {
+                console.error('WebSocket error:', err);
+                const errEl = document.getElementById('error-msg');
+                if (errEl) errEl.textContent = 'Connection failed! Server might be waking up (wait 20s) or restart the page.';
+            };
+            ws.onclose = () => {
+                if (gameMode === 'online' && gameState === 'playing') {
+                    alert('Connection lost! Returning to menu.');
+                    gameState = 'menu';
+                    menuOverlay.style.display = 'flex';
+                    buildMenu();
+                }
+            };
         }
 
         function updateLeaderboard() {
@@ -266,12 +237,12 @@
 
         function renderLeaderboard(leaders) {
             leaderboardDiv.innerHTML = '<b>🏆 Global Ranking</b><br>';
-            if (!leaders || leaders.length === 0) {
+            if (!leaders || leaders.length===0) {
                 leaderboardDiv.innerHTML += 'No data yet.';
                 return;
             }
-            leaders.forEach((p, i) => {
-                leaderboardDiv.innerHTML += `${i + 1}. ${p.name} - Wins: ${p.wins} Losses: ${p.losses}<br>`;
+            leaders.forEach((p,i) => {
+                leaderboardDiv.innerHTML += `${i+1}. ${p.name} - Wins: ${p.wins} Losses: ${p.losses}<br>`;
             });
         }
 
@@ -298,21 +269,21 @@
             rightPaddle.y = Math.max(0, Math.min(canvas.height - rightPaddle.h, rightPaddle.y));
             if (gameMode === 'bot') {
                 const aiSpeed = { easy: 0.04, medium: 0.07, hard: 0.11 }[difficulty];
-                const target = ball.y - rightPaddle.h / 2;
+                const target = ball.y - rightPaddle.h/2;
                 rightPaddle.y += (target - rightPaddle.y) * aiSpeed;
                 rightPaddle.y = Math.max(0, Math.min(canvas.height - rightPaddle.h, rightPaddle.y));
             }
             ball.x += ball.vx; ball.y += ball.vy;
             if (ball.y - ball.r <= 0 || ball.y + ball.r >= canvas.height) ball.vy *= -1;
             const hitPaddle = (p) => ball.x + ball.r > p.x && ball.x - ball.r < p.x + p.w &&
-                ball.y + ball.r > p.y && ball.y - ball.r < p.y + p.h;
+                                      ball.y + ball.r > p.y && ball.y - ball.r < p.y + p.h;
             if (ball.vx < 0 && hitPaddle(leftPaddle)) {
-                const hit = (ball.y - (leftPaddle.y + leftPaddle.h / 2)) / (leftPaddle.h / 2);
+                const hit = (ball.y - (leftPaddle.y + leftPaddle.h/2)) / (leftPaddle.h/2);
                 ball.vx = Math.abs(ball.vx);
                 ball.vy = hit * ball.speed * 0.8;
                 ball.x = leftPaddle.x + leftPaddle.w + ball.r;
             } else if (ball.vx > 0 && hitPaddle(rightPaddle)) {
-                const hit = (ball.y - (rightPaddle.y + rightPaddle.h / 2)) / (rightPaddle.h / 2);
+                const hit = (ball.y - (rightPaddle.y + rightPaddle.h/2)) / (rightPaddle.h/2);
                 ball.vx = -Math.abs(ball.vx);
                 ball.vy = hit * ball.speed * 0.8;
                 ball.x = rightPaddle.x - ball.r;
@@ -330,12 +301,12 @@
         }
 
         function draw() {
-            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            ctx.clearRect(0,0,canvas.width,canvas.height);
             ctx.strokeStyle = 'rgba(255,255,255,0.2)';
             ctx.setLineDash([8, 12]);
             ctx.beginPath();
-            ctx.moveTo(canvas.width / 2, 0);
-            ctx.lineTo(canvas.width / 2, canvas.height);
+            ctx.moveTo(canvas.width/2, 0);
+            ctx.lineTo(canvas.width/2, canvas.height);
             ctx.stroke();
             ctx.setLineDash([]);
             [leftPaddle, rightPaddle].forEach(p => {
@@ -345,20 +316,20 @@
                 ctx.shadowBlur = 0;
             });
             ctx.fillStyle = '#fff'; ctx.shadowColor = '#fff'; ctx.shadowBlur = 15;
-            ctx.beginPath(); ctx.arc(ball.x, ball.y, ball.r, 0, Math.PI * 2); ctx.fill();
+            ctx.beginPath(); ctx.arc(ball.x, ball.y, ball.r, 0, Math.PI*2); ctx.fill();
             ctx.shadowBlur = 0;
-            ctx.font = `bold ${canvas.width * 0.06}px 'Segoe UI', monospace`;
+            ctx.font = `bold ${canvas.width*0.06}px 'Segoe UI', monospace`;
             ctx.textAlign = 'center';
-            ctx.fillStyle = leftPaddle.color; ctx.fillText(scores.left, canvas.width / 4, canvas.height * 0.1);
-            ctx.fillStyle = rightPaddle.color; ctx.fillText(scores.right, 3 * canvas.width / 4, canvas.height * 0.1);
+            ctx.fillStyle = leftPaddle.color; ctx.fillText(scores.left, canvas.width/4, canvas.height*0.1);
+            ctx.fillStyle = rightPaddle.color; ctx.fillText(scores.right, 3*canvas.width/4, canvas.height*0.1);
             if (gameState === 'gameover') {
                 ctx.fillStyle = 'rgba(0,0,0,0.7)';
-                ctx.fillRect(0, 0, canvas.width, canvas.height);
+                ctx.fillRect(0,0,canvas.width,canvas.height);
                 ctx.fillStyle = '#fff';
-                ctx.font = `${canvas.width * 0.06}px 'Segoe UI', monospace`;
-                ctx.fillText(`${winner} Wins!`, canvas.width / 2, canvas.height / 2 - 30);
-                ctx.font = `${canvas.width * 0.03}px monospace`;
-                ctx.fillText('Press SPACE to return to menu', canvas.width / 2, canvas.height / 2 + 30);
+                ctx.font = `${canvas.width*0.06}px 'Segoe UI', monospace`;
+                ctx.fillText(`${winner} Wins!`, canvas.width/2, canvas.height/2-30);
+                ctx.font = `${canvas.width*0.03}px monospace`;
+                ctx.fillText('Press SPACE to return to menu', canvas.width/2, canvas.height/2+30);
             }
         }
 
@@ -368,7 +339,7 @@
             keys[e.key] = true;
             if (e.key === ' ' && gameState === 'gameover') {
                 gameState = 'menu'; menuOverlay.style.display = 'flex'; buildMenu();
-                scores = { left: 0, right: 0 }; winner = null;
+                scores = { left:0, right:0 }; winner = null;
             }
             if (e.key === 'Escape') {
                 if (gameMode === 'online' && ws) ws.close();
@@ -383,5 +354,4 @@
         loop();
     </script>
 </body>
-
 </html>
