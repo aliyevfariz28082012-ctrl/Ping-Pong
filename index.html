@@ -365,7 +365,8 @@
                 let touchActive = false;
                 let touchY = 0;
                 let leaderboardData = [];
-                let connectTimeout = null; // timeout ID for 60 seconds
+                let connectTimeout = null;
+                let connectionTimer = null; // əlavə: bağlantı aça bilməzsə geri dön
 
                 function returnToMenu() {
                     gameState = 'menu';
@@ -480,27 +481,40 @@
                 function connectOnline() {
                     if (ws) ws.close();
                     if (connectTimeout) clearTimeout(connectTimeout);
+                    if (connectionTimer) clearTimeout(connectionTimer);
 
                     waitingOverlay.style.display = 'flex';
                     waitingText.textContent = 'Connecting to server...';
                     menuOverlay.style.display = 'none';
 
-                    ws = new WebSocket(`${SERVER_URL}?token=${token}`);
-
-                    // 60 saniyəlik timeout
-                    connectTimeout = setTimeout(() => {
-                        if (gameState === 'menu' || (gameMode === 'online' && gameState !== 'playing')) {
-                            if (ws) ws.close();
+                    // 10 saniyə ərzində bağlantı qurulmasa, menyuya dön
+                    connectionTimer = setTimeout(() => {
+                        waitingText.textContent = 'Could not connect. Returning to menu...';
+                        setTimeout(() => {
+                            if (ws && (ws.readyState === WebSocket.CONNECTING)) ws.close();
                             waitingOverlay.style.display = 'none';
                             returnToMenu();
-                            alert('No opponent found. Please try again.');
-                        }
-                    }, 60000);
+                        }, 2000);
+                    }, 10000);
+
+                    ws = new WebSocket(`${SERVER_URL}?token=${token}`);
 
                     ws.onopen = () => {
+                        clearTimeout(connectionTimer);
                         waitingText.textContent = 'Waiting for opponent...';
                         ws.send(JSON.stringify({ type: 'join' }));
+
+                        // 60 saniyə rəqib tapılmazsa
+                        connectTimeout = setTimeout(() => {
+                            if (gameState === 'menu' || (gameMode === 'online' && gameState !== 'playing')) {
+                                if (ws) ws.close();
+                                waitingOverlay.style.display = 'none';
+                                returnToMenu();
+                                alert('No opponent found. Returning to menu.');
+                            }
+                        }, 60000);
                     };
+
                     ws.onmessage = (msg) => {
                         const data = JSON.parse(msg.data);
                         if (data.type === 'opponent') {
@@ -540,16 +554,23 @@
                             if (rankingModal.style.display === 'flex') renderRankingList();
                         }
                     };
+
                     ws.onerror = () => {
                         clearTimeout(connectTimeout);
-                        waitingText.textContent = 'Connection failed. Please try again.';
+                        clearTimeout(connectionTimer);
+                        waitingText.textContent = 'Connection error. Returning...';
+                        setTimeout(() => {
+                            waitingOverlay.style.display = 'none';
+                            returnToMenu();
+                        }, 2000);
                     };
+
                     ws.onclose = () => {
                         clearTimeout(connectTimeout);
+                        clearTimeout(connectionTimer);
                         if (gameMode === 'online' && gameState === 'playing') {
                             returnToMenu();
                         } else if (waitingOverlay.style.display === 'flex') {
-                            // Hələ gözləmə mərhələsindədirsə, menyuya dön
                             waitingOverlay.style.display = 'none';
                             returnToMenu();
                         }
@@ -559,6 +580,7 @@
                 waitingCancel.addEventListener('click', () => {
                     if (ws) ws.close();
                     if (connectTimeout) clearTimeout(connectTimeout);
+                    if (connectionTimer) clearTimeout(connectionTimer);
                     waitingOverlay.style.display = 'none';
                     returnToMenu();
                 });
@@ -609,7 +631,6 @@
                 canvas.addEventListener('touchend', handleTouchEnd);
                 canvas.addEventListener('touchcancel', handleTouchEnd);
 
-                // Gameover click/touch to return to menu
                 canvas.addEventListener('click', () => {
                     if (gameState === 'gameover') returnToMenu();
                 });
