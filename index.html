@@ -158,7 +158,6 @@
             border-radius: 20px; cursor: pointer; font-size: 16px;
         }
 
-        /* Ranking Modal */
         #ranking-modal {
             position: absolute; top: 0; left: 0; width: 100%; height: 100%;
             background: rgba(0,0,0,0.8); display: none; justify-content: center;
@@ -591,7 +590,6 @@
                 canvas.addEventListener('click', () => {
                     if (gameState === 'gameover') returnToMenu();
                 });
-                // Also allow touchend on gameover
                 canvas.addEventListener('touchend', (e) => {
                     if (gameState === 'gameover') {
                         e.preventDefault();
