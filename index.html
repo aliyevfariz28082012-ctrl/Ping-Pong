@@ -367,6 +367,16 @@
                 let touchY = 0;
                 let leaderboardData = [];
 
+                function returnToMenu() {
+                    gameState = 'menu';
+                    menuOverlay.style.display = 'flex';
+                    buildMenu();
+                    scores = { left:0, right:0 };
+                    winner = null;
+                    ingameMenuBtn.style.display = 'none';
+                    hideIngameMenu();
+                }
+
                 function showIngameMenu() { ingamePanel.style.display = 'flex'; }
                 function hideIngameMenu() { ingamePanel.style.display = 'none'; }
                 ingameMenuBtn.addEventListener('click', (e) => {
@@ -379,12 +389,7 @@
                     if (gameMode === 'online' && ws && ws.readyState === WebSocket.OPEN) {
                         ws.send(JSON.stringify({ type: 'leave' }));
                     } else {
-                        gameState = 'menu';
-                        menuOverlay.style.display = 'flex';
-                        buildMenu();
-                        ingameMenuBtn.style.display = 'none';
-                        scores = { left: 0, right: 0 };
-                        winner = null;
+                        returnToMenu();
                     }
                 });
 
@@ -524,11 +529,7 @@
                     ws.onerror = () => { waitingText.textContent = 'Connection failed. Please try again.'; };
                     ws.onclose = () => {
                         if (gameMode === 'online' && gameState === 'playing') {
-                            gameState = 'menu';
-                            menuOverlay.style.display = 'flex';
-                            buildMenu();
-                            ingameMenuBtn.style.display = 'none';
-                            hideIngameMenu();
+                            returnToMenu();
                         }
                         waitingOverlay.style.display = 'none';
                     };
@@ -537,9 +538,7 @@
                 waitingCancel.addEventListener('click', () => {
                     if (ws) ws.close();
                     waitingOverlay.style.display = 'none';
-                    gameState = 'menu';
-                    menuOverlay.style.display = 'flex';
-                    buildMenu();
+                    returnToMenu();
                 });
 
                 function startGame(mode) {
@@ -587,6 +586,18 @@
                 canvas.addEventListener('touchmove', handleTouchMove, { passive: false });
                 canvas.addEventListener('touchend', handleTouchEnd);
                 canvas.addEventListener('touchcancel', handleTouchEnd);
+
+                // Gameover click/touch to return to menu
+                canvas.addEventListener('click', () => {
+                    if (gameState === 'gameover') returnToMenu();
+                });
+                // Also allow touchend on gameover
+                canvas.addEventListener('touchend', (e) => {
+                    if (gameState === 'gameover') {
+                        e.preventDefault();
+                        returnToMenu();
+                    }
+                });
 
                 function update() {
                     if (gameState !== 'playing') return;
@@ -720,7 +731,7 @@
                         ctx.font = `bold ${canvas.width*0.07}px 'Montserrat', sans-serif`;
                         ctx.fillText(endText, canvas.width/2, canvas.height/2 - 40);
                         ctx.font = `${canvas.width*0.03}px 'Montserrat', sans-serif`;
-                        ctx.fillText('Press SPACE to return to menu', canvas.width/2, canvas.height/2 + 20);
+                        ctx.fillText('Press SPACE or tap to return to menu', canvas.width/2, canvas.height/2 + 20);
                     }
                 }
 
@@ -729,21 +740,11 @@
                 window.addEventListener('keydown', e => {
                     keys[e.key] = true;
                     if (e.key === ' ' && gameState === 'gameover') {
-                        gameState = 'menu';
-                        menuOverlay.style.display = 'flex';
-                        buildMenu();
-                        scores = { left:0, right:0 };
-                        winner = null;
-                        ingameMenuBtn.style.display = 'none';
-                        hideIngameMenu();
+                        returnToMenu();
                     }
                     if (e.key === 'Escape') {
                         if (gameMode === 'online' && ws) ws.close();
-                        gameState = 'menu';
-                        menuOverlay.style.display = 'flex';
-                        buildMenu();
-                        ingameMenuBtn.style.display = 'none';
-                        hideIngameMenu();
+                        returnToMenu();
                     }
                 });
                 window.addEventListener('keyup', e => { keys[e.key] = false; });
