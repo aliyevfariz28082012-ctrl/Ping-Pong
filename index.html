@@ -107,12 +107,6 @@
         }
         .menu-btn:hover { background: #00e5ff; color: #000; border-color: #fff; box-shadow: 0 0 20px #00e5ff; }
         .menu-btn.selected { background: #ff9800; border-color: #ff9800; color: #000; }
-        #leaderboard {
-            position: absolute; right: 20px; top: 20px;
-            background: rgba(0,0,0,0.7); color: white; padding: 15px;
-            border-radius: 12px; font-size: 14px; max-height: 300px; overflow-y: auto;
-            backdrop-filter: blur(8px); border: 1px solid rgba(255,255,255,0.2);
-        }
         #logout-btn {
             position: absolute; left: 20px; top: 20px; z-index: 20;
             background: rgba(255,255,255,0.1); color: white; border: 1px solid rgba(255,255,255,0.3);
@@ -162,6 +156,29 @@
             margin-top: 20px; background: rgba(255,255,255,0.15);
             border: 1px solid white; color: white; padding: 8px 20px;
             border-radius: 20px; cursor: pointer; font-size: 16px;
+        }
+
+        /* Ranking Modal */
+        #ranking-modal {
+            position: absolute; top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(0,0,0,0.8); display: none; justify-content: center;
+            align-items: center; z-index: 100; backdrop-filter: blur(10px);
+        }
+        #ranking-content {
+            background: rgba(20,20,35,0.98); border: 2px solid #00e5ff;
+            border-radius: 20px; padding: 30px; max-width: 420px; width: 90%;
+            max-height: 70vh; overflow-y: auto; color: white; text-align: center;
+        }
+        #ranking-content h2 { margin-bottom: 20px; color: #00e5ff; }
+        #ranking-list { list-style: none; padding: 0; }
+        #ranking-list li {
+            display: flex; justify-content: space-between; padding: 10px 16px;
+            border-bottom: 1px solid rgba(255,255,255,0.1); font-size: 18px;
+        }
+        #ranking-close {
+            margin-top: 20px; background: #00e5ff; color: #000;
+            border: none; padding: 10px 30px; border-radius: 25px;
+            font-weight: bold; cursor: pointer; font-size: 16px;
         }
     </style>
 </head>
@@ -217,11 +234,17 @@
             <button class="ingame-option" id="leave-game-btn">🚪 Leave Game</button>
         </div>
         <div id="menu-overlay"></div>
-        <div id="leaderboard"></div>
         <div id="waiting-overlay">
             <div class="loader"></div>
             <div id="waiting-text">Connecting to server...</div>
             <button id="waiting-cancel">Cancel</button>
+        </div>
+        <div id="ranking-modal">
+            <div id="ranking-content">
+                <h2>🏆 Global Ranking</h2>
+                <ul id="ranking-list"></ul>
+                <button id="ranking-close">Close</button>
+            </div>
         </div>
     </div>
 
@@ -320,7 +343,6 @@
                 const canvas = document.getElementById('canvas');
                 const ctx = canvas.getContext('2d');
                 const menuOverlay = document.getElementById('menu-overlay');
-                const leaderboardDiv = document.getElementById('leaderboard');
                 const ingameMenuBtn = document.getElementById('ingame-menu-btn');
                 const ingamePanel = document.getElementById('ingame-panel');
                 const resumeBtn = document.getElementById('resume-btn');
@@ -328,6 +350,9 @@
                 const waitingOverlay = document.getElementById('waiting-overlay');
                 const waitingText = document.getElementById('waiting-text');
                 const waitingCancel = document.getElementById('waiting-cancel');
+                const rankingModal = document.getElementById('ranking-modal');
+                const rankingList = document.getElementById('ranking-list');
+                const rankingClose = document.getElementById('ranking-close');
 
                 let gameState = 'menu';
                 let gameMode = null;
@@ -340,7 +365,7 @@
                 const keys = {};
                 let touchActive = false;
                 let touchY = 0;
-                const isTouchDevice = 'ontouchstart' in window || navigator.maxTouchPoints > 0;
+                let leaderboardData = [];
 
                 function showIngameMenu() { ingamePanel.style.display = 'flex'; }
                 function hideIngameMenu() { ingamePanel.style.display = 'none'; }
@@ -362,6 +387,8 @@
                         winner = null;
                     }
                 });
+
+                rankingClose.addEventListener('click', () => { rankingModal.style.display = 'none'; });
 
                 function resize() {
                     canvas.width = window.innerWidth;
@@ -391,11 +418,37 @@
                     ball.vy = baseSpeed * Math.sin(angle);
                 }
 
+                function showRanking() {
+                    if (leaderboardData.length === 0) {
+                        if (ws && ws.readyState === WebSocket.OPEN) {
+                            ws.send(JSON.stringify({ type: 'getLeaderboard' }));
+                        }
+                        rankingList.innerHTML = '<li>Loading...</li>';
+                    } else {
+                        renderRankingList();
+                    }
+                    rankingModal.style.display = 'flex';
+                }
+
+                function renderRankingList() {
+                    rankingList.innerHTML = '';
+                    if (leaderboardData.length === 0) {
+                        rankingList.innerHTML = '<li>No data yet</li>';
+                        return;
+                    }
+                    leaderboardData.forEach((p, i) => {
+                        const li = document.createElement('li');
+                        li.innerHTML = `<span>${i+1}. ${p.username || p.name}</span><span>W:${p.wins} L:${p.losses}</span>`;
+                        rankingList.appendChild(li);
+                    });
+                }
+
                 function buildMenu() {
                     menuOverlay.innerHTML = '';
                     [{ text: '1 Player (vs Bot)', action: ()=> startGame('bot') },
                      { text: '2 Players (Local)', action: ()=> startGame('local') },
-                     { text: 'Online Multiplayer', action: ()=> connectOnline() }]
+                     { text: 'Online Multiplayer', action: ()=> connectOnline() },
+                     { text: '🏆 Global Ranking', action: ()=> showRanking() }]
                     .forEach(b => {
                         const btn = document.createElement('div');
                         btn.className = 'menu-btn';
@@ -438,7 +491,6 @@
                             startGame('online');
                         } else if (data.type === 'state') {
                             if (gameMode === 'online' && gameState === 'playing') {
-                                // Convert virtual coordinates to screen
                                 ball.x = data.ball.x * (canvas.width / VIRTUAL_W);
                                 ball.y = data.ball.y * (canvas.height / VIRTUAL_H);
                                 ball.vx = data.ball.vx * (canvas.width / VIRTUAL_W);
@@ -465,7 +517,8 @@
                                 hideIngameMenu();
                             }
                         } else if (data.type === 'leaderboard') {
-                            renderLeaderboard(data.leaders);
+                            leaderboardData = data.leaders || [];
+                            if (rankingModal.style.display === 'flex') renderRankingList();
                         }
                     };
                     ws.onerror = () => { waitingText.textContent = 'Connection failed. Please try again.'; };
@@ -504,15 +557,7 @@
                     if (ws && ws.readyState === WebSocket.OPEN) ws.send(JSON.stringify({ type: 'getLeaderboard' }));
                 }
 
-                function renderLeaderboard(leaders) {
-                    leaderboardDiv.innerHTML = '<b>🏆 Global Ranking</b><br>';
-                    if (!leaders || leaders.length===0) { leaderboardDiv.innerHTML += 'No data yet.'; return; }
-                    leaders.forEach((p,i) => {
-                        leaderboardDiv.innerHTML += `${i+1}. ${p.fullname || p.name} - Wins: ${p.wins} Losses: ${p.losses}<br>`;
-                    });
-                }
-
-                // ---- Touch Handling ----
+                // Touch Handling
                 function handleTouchMove(e) {
                     e.preventDefault();
                     if (gameState !== 'playing') return;
@@ -548,7 +593,6 @@
                     const speed = canvas.height * 0.008;
 
                     if (gameMode === 'online') {
-                        // Control own paddle (keyboard + touch)
                         if (onlineSide === 'left') {
                             if (keys['w']) leftPaddle.y -= speed;
                             if (keys['s']) leftPaddle.y += speed;
@@ -558,7 +602,6 @@
                             if (keys['ArrowDown']) rightPaddle.y += speed;
                             rightPaddle.y = Math.max(0, Math.min(canvas.height - rightPaddle.h, rightPaddle.y));
                         }
-                        // Send position to server
                         if (ws && ws.readyState === WebSocket.OPEN) {
                             const paddleY = onlineSide === 'left' ? leftPaddle.y : rightPaddle.y;
                             const virtualY = paddleY * (VIRTUAL_H / canvas.height);
@@ -567,7 +610,6 @@
                         return;
                     }
 
-                    // Local modes
                     if (gameMode === 'bot' && !touchActive) {
                         if (keys['w']) leftPaddle.y -= speed;
                         if (keys['s']) leftPaddle.y += speed;
@@ -586,12 +628,11 @@
                         rightPaddle.y = Math.max(0, Math.min(canvas.height - rightPaddle.h, rightPaddle.y));
                     }
 
-                    // Ball physics (predictive collision for local)
+                    // Predictive collision for local modes
                     const nextX = ball.x + ball.vx;
                     const nextY = ball.y + ball.vy;
-                    // Wall bounce
                     if (nextY - ball.r <= 0 || nextY + ball.r >= canvas.height) ball.vy *= -1;
-                    // Paddle collision check with next position
+                    
                     const hitPaddle = (p, side) => {
                         if (side === 'left' && ball.vx < 0) {
                             return nextX - ball.r <= p.x + p.w && nextX + ball.r >= p.x &&
@@ -602,6 +643,7 @@
                         }
                         return false;
                     };
+                    
                     if (hitPaddle(leftPaddle, 'left')) {
                         const hitPos = (ball.y - (leftPaddle.y + leftPaddle.h/2)) / (leftPaddle.h/2);
                         ball.speed += 0.3;
@@ -619,7 +661,6 @@
                         ball.y = nextY;
                     }
 
-                    // Score
                     if (ball.x + ball.r < 0) { scores.right++; checkWin(); resetBall(); }
                     else if (ball.x - ball.r > canvas.width) { scores.left++; checkWin(); resetBall(); }
                 }
@@ -713,6 +754,7 @@
                 ingameMenuBtn.style.display = 'none';
                 hideIngameMenu();
                 waitingOverlay.style.display = 'none';
+                rankingModal.style.display = 'none';
                 loop();
             }
         })();
