@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no, viewport-fit=cover">
     <title>Pong - Online Multiplayer</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/all.min.css">
     <style>
@@ -15,6 +15,7 @@
             background: #0a0a14;
             display: flex; justify-content: center; align-items: center;
             overflow: hidden;
+            touch-action: none; /* prevent browser gestures */
         }
 
         #auth-container {
@@ -221,6 +222,13 @@
             cursor: pointer;
             font-size: 16px;
         }
+
+        /* Mobile touch hint */
+        .touch-hint {
+            color: rgba(255,255,255,0.5);
+            font-size: 14px;
+            margin-top: 5px;
+        }
     </style>
 </head>
 <body>
@@ -409,10 +417,18 @@
             let winner = null;
             const keys = {};
 
+            // Touch control variables
+            let touchActive = false;
+            let touchY = 0;
+
+            // Determine if device has touch support
+            const isTouchDevice = 'ontouchstart' in window || navigator.maxTouchPoints > 0;
+
             // In-game menu
             function showIngameMenu() { ingamePanel.style.display = 'flex'; }
             function hideIngameMenu() { ingamePanel.style.display = 'none'; }
-            ingameMenuBtn.addEventListener('click', () => {
+            ingameMenuBtn.addEventListener('click', (e) => {
+                e.stopPropagation();
                 ingamePanel.style.display = (ingamePanel.style.display === 'flex') ? 'none' : 'flex';
             });
             resumeBtn.addEventListener('click', hideIngameMenu);
@@ -420,9 +436,7 @@
                 hideIngameMenu();
                 if (gameMode === 'online' && ws && ws.readyState === WebSocket.OPEN) {
                     ws.send(JSON.stringify({ type: 'leave' }));
-                    // wait for server state to trigger gameover
                 } else {
-                    // local/bot: just return to menu
                     gameState = 'menu';
                     menuOverlay.style.display = 'flex';
                     buildMenu();
@@ -508,12 +522,10 @@
                         startGame('online');
                     } else if (data.type === 'state') {
                         if (gameMode === 'online' && gameState === 'playing') {
-                            // Update ball position (scaled)
                             ball.x = data.ball.x * (canvas.width / VIRTUAL_W);
                             ball.y = data.ball.y * (canvas.height / VIRTUAL_H);
                             ball.vx = data.ball.vx * (canvas.width / VIRTUAL_W);
                             ball.vy = data.ball.vy * (canvas.height / VIRTUAL_H);
-                            // Update opponent's paddle
                             if (onlineSide === 'left') {
                                 rightPaddle.y = data.rightY * (canvas.height / VIRTUAL_H);
                             } else {
@@ -527,6 +539,14 @@
                                 hideIngameMenu();
                                 updateLeaderboard();
                             }
+                        }
+                    } else if (data.type === 'opponent_left') {
+                        // opponent left, we win
+                        if (gameMode === 'online' && gameState === 'playing') {
+                            winner = onlineSide === 'left' ? 'left' : 'right'; // we win
+                            gameState = 'gameover';
+                            ingameMenuBtn.style.display = 'none';
+                            hideIngameMenu();
                         }
                     } else if (data.type === 'leaderboard') {
                         renderLeaderboard(data.leaders);
@@ -578,11 +598,56 @@
                 });
             }
 
+            // ---------- TOUCH HANDLING ----------
+            function handleTouchMove(e) {
+                e.preventDefault();
+                if (gameState !== 'playing') return;
+                const touch = e.touches[0];
+                if (!touch) return;
+                touchY = touch.clientY;
+                touchActive = true;
+
+                // Move the appropriate paddle based on mode
+                const targetY = touchY - (gameMode === 'online' ? (onlineSide === 'left' ? leftPaddle.h : rightPaddle.h) : leftPaddle.h) / 2;
+                if (gameMode === 'online') {
+                    if (onlineSide === 'left') {
+                        leftPaddle.y = Math.max(0, Math.min(canvas.height - leftPaddle.h, targetY));
+                    } else {
+                        rightPaddle.y = Math.max(0, Math.min(canvas.height - rightPaddle.h, targetY));
+                    }
+                } else if (gameMode === 'bot') {
+                    leftPaddle.y = Math.max(0, Math.min(canvas.height - leftPaddle.h, targetY));
+                } else if (gameMode === 'local') {
+                    // In local, touch controls left paddle if touch on left half, else right paddle
+                    if (touch.clientX < canvas.width / 2) {
+                        leftPaddle.y = Math.max(0, Math.min(canvas.height - leftPaddle.h, targetY));
+                    } else {
+                        rightPaddle.y = Math.max(0, Math.min(canvas.height - rightPaddle.h, targetY));
+                    }
+                }
+            }
+
+            function handleTouchEnd(e) {
+                e.preventDefault();
+                touchActive = false;
+            }
+
+            canvas.addEventListener('touchstart', handleTouchMove, { passive: false });
+            canvas.addEventListener('touchmove', handleTouchMove, { passive: false });
+            canvas.addEventListener('touchend', handleTouchEnd);
+            canvas.addEventListener('touchcancel', handleTouchEnd);
+
+            // Prevent default zoom on double tap
+            document.addEventListener('touchstart', (e) => {
+                if (e.target === canvas) e.preventDefault();
+            }, { passive: false });
+
             function update() {
                 if (gameState !== 'playing') return;
 
                 const speed = canvas.height * 0.008;
-                // Online: control own paddle via keys
+
+                // Keyboard controls (desktop)
                 if (gameMode === 'online') {
                     if (onlineSide === 'left') {
                         if (keys['w']) leftPaddle.y -= speed;
@@ -599,26 +664,33 @@
                         const virtualY = paddleY * (VIRTUAL_H / canvas.height);
                         ws.send(JSON.stringify({ type: 'input', y: virtualY, side: onlineSide }));
                     }
+                    // Touch already handled in touchMove
                     return;
                 }
 
-                // Local / bot update
+                // Local / bot update (keyboard)
                 if (gameMode === 'bot') {
-                    if (keys['w']) leftPaddle.y -= speed;
-                    if (keys['s']) leftPaddle.y += speed;
+                    if (!touchActive) {
+                        if (keys['w']) leftPaddle.y -= speed;
+                        if (keys['s']) leftPaddle.y += speed;
+                    }
                 } else if (gameMode === 'local') {
-                    if (keys['w']) leftPaddle.y -= speed;
-                    if (keys['s']) leftPaddle.y += speed;
-                    if (keys['ArrowUp']) rightPaddle.y -= speed;
-                    if (keys['ArrowDown']) rightPaddle.y += speed;
+                    if (!touchActive) {
+                        if (keys['w']) leftPaddle.y -= speed;
+                        if (keys['s']) leftPaddle.y += speed;
+                        if (keys['ArrowUp']) rightPaddle.y -= speed;
+                        if (keys['ArrowDown']) rightPaddle.y += speed;
+                    }
                 }
                 leftPaddle.y = Math.max(0, Math.min(canvas.height - leftPaddle.h, leftPaddle.y));
                 rightPaddle.y = Math.max(0, Math.min(canvas.height - rightPaddle.h, rightPaddle.y));
+
                 if (gameMode === 'bot') {
                     const aiSpeed = { easy: 0.04, medium: 0.07, hard: 0.11 }[difficulty];
                     rightPaddle.y += (ball.y - rightPaddle.h/2 - rightPaddle.y) * aiSpeed;
                     rightPaddle.y = Math.max(0, Math.min(canvas.height - rightPaddle.h, rightPaddle.y));
                 }
+
                 ball.x += ball.vx;
                 ball.y += ball.vy;
                 if (ball.y - ball.r <= 0 || ball.y + ball.r >= canvas.height) ball.vy *= -1;
@@ -643,7 +715,7 @@
 
             function checkWin() {
                 if (scores.left >= WIN_SCORE && scores.left - scores.right >= DEUCE_GAP) {
-                    winner = 'left'; // keep as side identifier
+                    winner = 'left';
                     gameState = 'gameover';
                     ingameMenuBtn.style.display = 'none';
                     hideIngameMenu();
@@ -687,8 +759,12 @@
                     if (gameMode === 'online') {
                         if ((winner === 'left' && onlineSide === 'left') || (winner === 'right' && onlineSide === 'right')) {
                             endText = 'You Won!';
-                        } else {
+                        } else if ((winner === 'left' && onlineSide === 'right') || (winner === 'right' && onlineSide === 'left')) {
                             endText = 'You Lost!';
+                        } else if (winner === 'left' || winner === 'right') {
+                            endText = 'Game Over';
+                        } else {
+                            endText = 'Game Over';
                         }
                     } else {
                         endText = `${winner === 'left' ? 'Left Player' : 'Right Player'} Wins!`;
@@ -697,6 +773,17 @@
                     ctx.fillText(endText, canvas.width/2, canvas.height/2 - 40);
                     ctx.font = `${canvas.width*0.03}px 'Montserrat', sans-serif`;
                     ctx.fillText('Press SPACE to return to menu', canvas.width/2, canvas.height/2 + 20);
+                }
+                // Touch hint for mobile
+                if (isTouchDevice && gameState === 'playing') {
+                    ctx.fillStyle = 'rgba(255,255,255,0.4)';
+                    ctx.font = `${Math.max(12, canvas.width*0.015)}px 'Montserrat', sans-serif`;
+                    ctx.textAlign = 'center';
+                    if (gameMode === 'local') {
+                        ctx.fillText('Touch left/right half to move paddles', canvas.width/2, canvas.height - 10);
+                    } else {
+                        ctx.fillText('Touch and drag to move paddle', canvas.width/2, canvas.height - 10);
+                    }
                 }
             }
 
