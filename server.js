@@ -97,14 +97,14 @@ function moveBall(game) {
         const paddleHit = (paddle, side) => {
             if (side === 'left' && ball.vx < 0) {
                 return ball.x - ball.r <= paddle.x + paddle.w &&
-                       ball.x + ball.r >= paddle.x &&
-                       ball.y + ball.r > paddle.y &&
-                       ball.y - ball.r < paddle.y + paddle.h;
+                    ball.x + ball.r >= paddle.x &&
+                    ball.y + ball.r > paddle.y &&
+                    ball.y - ball.r < paddle.y + paddle.h;
             } else if (side === 'right' && ball.vx > 0) {
                 return ball.x + ball.r >= paddle.x &&
-                       ball.x - ball.r <= paddle.x + paddle.w &&
-                       ball.y + ball.r > paddle.y &&
-                       ball.y - ball.r < paddle.y + paddle.h;
+                    ball.x - ball.r <= paddle.x + paddle.w &&
+                    ball.y + ball.r > paddle.y &&
+                    ball.y - ball.r < paddle.y + paddle.h;
             }
             return false;
         };
@@ -229,8 +229,9 @@ wss.on('connection', (ws, req) => {
     ws.on('message', (msg) => {
         const data = JSON.parse(msg);
         if (data.type === 'join') {
-            // Əgər gözləyən varsa və bağlantısı açıqdırsa, oyunu başlat
-            if (waitingPlayer && waitingPlayer !== ws && waitingPlayer.readyState === WebSocket.OPEN) {
+            // DÜZƏLİŞ BURADADIR:
+            // Əgər gözləyən varsa və bağlantısı açıqdırsa, oyunu başlat.
+            if (waitingPlayer && waitingPlayer.readyState === WebSocket.OPEN) {
                 const p1 = waitingPlayer;
                 const p2 = ws;
                 const game = createGame(p1, p2);
@@ -239,11 +240,7 @@ wss.on('connection', (ws, req) => {
                 p2.send(JSON.stringify({ type: 'opponent', opponent: users.get(p1._username).fullname, side: 'right' }));
                 waitingPlayer = null;
             } else {
-                // Gözləyən yoxdursa, özünü gözləməyə qoy
-                if (waitingPlayer && waitingPlayer !== ws) {
-                    // Əgər gözləyən varsa amma bağlantısı bağlıdırsa, onu ləğv et
-                    waitingPlayer = null;
-                }
+                // Gözləyən yoxdursa (və ya bağlantısı bağlıdırsa), özünü gözləməyə qoy.
                 waitingPlayer = ws;
             }
         } else if (data.type === 'input') {
