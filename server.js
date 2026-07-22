@@ -221,16 +221,19 @@ wss.on('connection', (ws, req) => {
     const token = url.searchParams.get('token');
     const username = tokens.get(token);
     if (!username || !users.has(username)) {
+        console.log(`Bağlantı rədd edildi: token səhvdir`);
         ws.close(4001, 'Unauthorized');
         return;
     }
     ws._username = username;
+    console.log(`[${username}] bağlandı`);
 
     ws.on('message', (msg) => {
         const data = JSON.parse(msg);
+        console.log(`[${username}] mesaj: ${data.type}`);
+
         if (data.type === 'join') {
-            // DÜZƏLİŞ BURADADIR:
-            // Əgər gözləyən varsa və bağlantısı açıqdırsa, oyunu başlat.
+            console.log(`[${username}] oyuna qoşulmaq istəyir. Gözləyən: ${waitingPlayer ? waitingPlayer._username : 'yoxdur'}`);
             if (waitingPlayer && waitingPlayer.readyState === WebSocket.OPEN) {
                 const p1 = waitingPlayer;
                 const p2 = ws;
@@ -238,9 +241,10 @@ wss.on('connection', (ws, req) => {
                 games.set(game.id, game);
                 p1.send(JSON.stringify({ type: 'opponent', opponent: users.get(p2._username).fullname, side: 'left' }));
                 p2.send(JSON.stringify({ type: 'opponent', opponent: users.get(p1._username).fullname, side: 'right' }));
+                console.log(`>>> OYUN BAŞLADI: ${p1._username} vs ${p2._username}`);
                 waitingPlayer = null;
             } else {
-                // Gözləyən yoxdursa (və ya bağlantısı bağlıdırsa), özünü gözləməyə qoy.
+                console.log(`[${username}] rəqib gözləyir...`);
                 waitingPlayer = ws;
             }
         } else if (data.type === 'input') {
@@ -280,7 +284,11 @@ wss.on('connection', (ws, req) => {
     });
 
     ws.on('close', () => {
-        if (waitingPlayer === ws) waitingPlayer = null;
+        console.log(`[${username}] bağlantısı kəsildi`);
+        if (waitingPlayer === ws) {
+            console.log('Gözləyən oyunçu ləğv edildi');
+            waitingPlayer = null;
+        }
         for (let [id, game] of games) {
             if (game.players.includes(ws)) {
                 clearInterval(game.interval);
@@ -298,4 +306,4 @@ wss.on('connection', (ws, req) => {
 app.get('/', (req, res) => res.sendFile(path.join(__dirname, 'index.html')));
 
 const PORT = process.env.PORT || 8080;
-server.listen(PORT, () => console.log(`Server running on port ${PORT}`));
+server.listen(PORT, () => console.log(`Server http://localhost:${PORT} ünvanında işləyir`));
